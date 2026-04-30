@@ -1,0 +1,38 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1>Logowanie</h1>
+    <p>System zarządzania agentami ubezpieczeniowymi</p>
+
+    <form (ngSubmit)="login()">
+      <label for="email">Adres e-mail</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        [(ngModel)]="email"
+        placeholder="np. admin@firma.pl"
+      />
+
+      <label for="password">Hasło</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        [(ngModel)]="password"
+        placeholder="Wpisz hasło"
+      />
+
+      <button type="submit">Zaloguj</button>
+
+      <p class="error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </p>
+    </form>
+
+    <div class="test-users">
+      <strong>Dane testowe:</strong>
+      <p>Admin: admin@firma.pl / admin123</p>
+      <p>Agent: agent@firma.pl / agent123</p>
+    </div>
+  </div>
+</div>
