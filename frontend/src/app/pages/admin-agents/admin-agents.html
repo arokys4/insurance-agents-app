@@ -1,0 +1,41 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Agenci</h1>
+      <p>Lista agentów ubezpieczeniowych przypisanych do zespołu.</p>
+    </div>
+
+    <button (click)="goBack()">Powrót</button>
+  </header>
+
+  <section class="toolbar">
+    <button>Dodaj agenta</button>
+  </section>
+
+  <section class="agents-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Imię i nazwisko</th>
+          <th>E-mail</th>
+          <th>Telefon</th>
+          <th>Status</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let agent of agents">
+          <td>{{ agent.firstName }} {{ agent.lastName }}</td>
+          <td>{{ agent.email }}</td>
+          <td>{{ agent.phone }}</td>
+          <td>{{ agent.status }}</td>
+          <td>
+            <button>Edytuj</button>
+            <button>Szczegóły</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

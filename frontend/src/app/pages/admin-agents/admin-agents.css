@@ -1,0 +1,63 @@
+.page {
+  min-height: 100vh;
+  padding: 40px;
+  background: #f4f6f8;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  color: #1f3c88;
+  margin-bottom: 8px;
+}
+
+.header p {
+  color: #555;
+}
+
+.toolbar {
+  margin: 24px 0;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #1f3c88;
+  color: white;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+button:hover {
+  background: #172f6a;
+}
+
+.agents-table {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  color: #1f3c88;
+  padding: 12px;
+  border-bottom: 2px solid #e0e4ea;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e4ea;
+}

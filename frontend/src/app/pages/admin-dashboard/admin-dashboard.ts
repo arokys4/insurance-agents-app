@@ -10,6 +10,10 @@ import { Router } from '@angular/router';
 export class AdminDashboard {
   constructor(private router: Router) {}
 
+  goToAgents(): void {
+    this.router.navigate(['/admin/agents']);
+  }
+
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);
