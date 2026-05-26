@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Login } from './pages/login/login';
 import { AdminDashboard } from './pages/admin-dashboard/admin-dashboard';
 import { AgentDashboard } from './pages/agent-dashboard/agent-dashboard';
+import { adminGuard, agentGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -15,10 +16,16 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    component: AdminDashboard
+    component: AdminDashboard,
+    canActivate: [adminGuard]
   },
   {
     path: 'agent',
-    component: AgentDashboard
+    component: AgentDashboard,
+    canActivate: [agentGuard]
+  },
+  {
+    path: '**',
+    redirectTo: 'login'
   }
 ];
