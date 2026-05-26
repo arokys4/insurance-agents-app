@@ -110,3 +110,7 @@ td {
 .secondary-button:hover {
   background: #5a6268;
 }
+
+td button {
+  margin-bottom: 4px;
+}

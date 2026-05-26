@@ -11,6 +11,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class AdminAgents {
   showForm = false;
+  editMode = false;
+  editedAgentIndex: number | null = null;
 
   agents = [
     {
@@ -36,7 +38,7 @@ export class AdminAgents {
     }
   ];
 
-  newAgent = {
+  agentForm = {
     firstName: '',
     lastName: '',
     email: '',
@@ -47,39 +49,72 @@ export class AdminAgents {
   constructor(private router: Router) {}
 
   showAddAgentForm(): void {
+    this.clearForm();
+    this.editMode = false;
+    this.editedAgentIndex = null;
     this.showForm = true;
   }
 
-  addAgent(): void {
+  saveAgent(): void {
     if (
-      !this.newAgent.firstName ||
-      !this.newAgent.lastName ||
-      !this.newAgent.email ||
-      !this.newAgent.phone
+      !this.agentForm.firstName ||
+      !this.agentForm.lastName ||
+      !this.agentForm.email ||
+      !this.agentForm.phone
     ) {
       alert('Uzupełnij wszystkie pola formularza.');
       return;
     }
 
-    this.agents.push({
-      firstName: this.newAgent.firstName,
-      lastName: this.newAgent.lastName,
-      email: this.newAgent.email,
-      phone: this.newAgent.phone,
-      status: this.newAgent.status
-    });
+    if (this.editMode && this.editedAgentIndex !== null) {
+      this.agents[this.editedAgentIndex] = {
+        firstName: this.agentForm.firstName,
+        lastName: this.agentForm.lastName,
+        email: this.agentForm.email,
+        phone: this.agentForm.phone,
+        status: this.agentForm.status
+      };
+    } else {
+      this.agents.push({
+        firstName: this.agentForm.firstName,
+        lastName: this.agentForm.lastName,
+        email: this.agentForm.email,
+        phone: this.agentForm.phone,
+        status: this.agentForm.status
+      });
+    }
 
     this.clearForm();
     this.showForm = false;
+    this.editMode = false;
+    this.editedAgentIndex = null;
+  }
+
+  editAgent(index: number): void {
+    const selectedAgent = this.agents[index];
+
+    this.agentForm = {
+      firstName: selectedAgent.firstName,
+      lastName: selectedAgent.lastName,
+      email: selectedAgent.email,
+      phone: selectedAgent.phone,
+      status: selectedAgent.status
+    };
+
+    this.editMode = true;
+    this.editedAgentIndex = index;
+    this.showForm = true;
   }
 
   cancel(): void {
     this.clearForm();
     this.showForm = false;
+    this.editMode = false;
+    this.editedAgentIndex = null;
   }
 
   clearForm(): void {
-    this.newAgent = {
+    this.agentForm = {
       firstName: '',
       lastName: '',
       email: '',

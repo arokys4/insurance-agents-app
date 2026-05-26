@@ -13,9 +13,9 @@
   </section>
 
   <section class="form-card" *ngIf="showForm">
-    <h2>Dodawanie nowego agenta</h2>
+    <h2>{{ editMode ? 'Edycja agenta' : 'Dodawanie nowego agenta' }}</h2>
 
-    <form (ngSubmit)="addAgent()">
+    <form (ngSubmit)="saveAgent()">
       <div class="form-grid">
         <div class="form-field">
           <label for="firstName">Imię</label>
@@ -23,7 +23,7 @@
             id="firstName"
             name="firstName"
             type="text"
-            [(ngModel)]="newAgent.firstName"
+            [(ngModel)]="agentForm.firstName"
             placeholder="np. Adam"
           />
         </div>
@@ -34,7 +34,7 @@
             id="lastName"
             name="lastName"
             type="text"
-            [(ngModel)]="newAgent.lastName"
+            [(ngModel)]="agentForm.lastName"
             placeholder="np. Zieliński"
           />
         </div>
@@ -45,7 +45,7 @@
             id="email"
             name="email"
             type="email"
-            [(ngModel)]="newAgent.email"
+            [(ngModel)]="agentForm.email"
             placeholder="np. adam.zielinski@firma.pl"
           />
         </div>
@@ -56,7 +56,7 @@
             id="phone"
             name="phone"
             type="text"
-            [(ngModel)]="newAgent.phone"
+            [(ngModel)]="agentForm.phone"
             placeholder="np. 500 700 800"
           />
         </div>
@@ -66,7 +66,7 @@
           <select
             id="status"
             name="status"
-            [(ngModel)]="newAgent.status"
+            [(ngModel)]="agentForm.status"
           >
             <option value="Aktywny">Aktywny</option>
             <option value="Nieaktywny">Nieaktywny</option>
@@ -75,8 +75,13 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit">Zapisz</button>
-        <button type="button" class="secondary-button" (click)="cancel()">Anuluj</button>
+        <button type="submit">
+          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancel()">
+          Anuluj
+        </button>
       </div>
     </form>
   </section>
@@ -94,13 +99,13 @@
       </thead>
 
       <tbody>
-        <tr *ngFor="let agent of agents">
+        <tr *ngFor="let agent of agents; let i = index">
           <td>{{ agent.firstName }} {{ agent.lastName }}</td>
           <td>{{ agent.email }}</td>
           <td>{{ agent.phone }}</td>
           <td>{{ agent.status }}</td>
           <td>
-            <button>Edytuj</button>
+            <button (click)="editAgent(i)">Edytuj</button>
             <button>Szczegóły</button>
           </td>
         </tr>
