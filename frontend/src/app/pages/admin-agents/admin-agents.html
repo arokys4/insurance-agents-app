@@ -9,7 +9,76 @@
   </header>
 
   <section class="toolbar">
-    <button>Dodaj agenta</button>
+    <button (click)="showAddAgentForm()">Dodaj agenta</button>
+  </section>
+
+  <section class="form-card" *ngIf="showForm">
+    <h2>Dodawanie nowego agenta</h2>
+
+    <form (ngSubmit)="addAgent()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="firstName">Imię</label>
+          <input
+            id="firstName"
+            name="firstName"
+            type="text"
+            [(ngModel)]="newAgent.firstName"
+            placeholder="np. Adam"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="lastName">Nazwisko</label>
+          <input
+            id="lastName"
+            name="lastName"
+            type="text"
+            [(ngModel)]="newAgent.lastName"
+            placeholder="np. Zieliński"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            [(ngModel)]="newAgent.email"
+            placeholder="np. adam.zielinski@firma.pl"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="phone">Telefon</label>
+          <input
+            id="phone"
+            name="phone"
+            type="text"
+            [(ngModel)]="newAgent.phone"
+            placeholder="np. 500 700 800"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="status">Status</label>
+          <select
+            id="status"
+            name="status"
+            [(ngModel)]="newAgent.status"
+          >
+            <option value="Aktywny">Aktywny</option>
+            <option value="Nieaktywny">Nieaktywny</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">Zapisz</button>
+        <button type="button" class="secondary-button" (click)="cancel()">Anuluj</button>
+      </div>
+    </form>
   </section>
 
   <section class="agents-table">
