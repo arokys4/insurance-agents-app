@@ -4,6 +4,7 @@ import { AdminDashboard } from './pages/admin-dashboard/admin-dashboard';
 import { AgentDashboard } from './pages/agent-dashboard/agent-dashboard';
 import { adminGuard, agentGuard } from './guards/auth.guard';
 import { AdminAgents } from './pages/admin-agents/admin-agents';
+import { AdminMeetings } from './pages/admin-meetings/admin-meetings';
 
 
 export const routes: Routes = [
@@ -21,9 +22,14 @@ export const routes: Routes = [
     component: AdminDashboard,
     canActivate: [adminGuard]
   },
-   {
+  {
     path: 'admin/agents',
     component: AdminAgents,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/meetings',
+    component: AdminMeetings,
     canActivate: [adminGuard]
   },
   {
@@ -31,7 +37,6 @@ export const routes: Routes = [
     component: AgentDashboard,
     canActivate: [agentGuard]
   },
-
   {
     path: '**',
     redirectTo: 'login'

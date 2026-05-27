@@ -1,0 +1,221 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Spotkania</h1>
+      <p>Lista spotkań przypisanych do agentów ubezpieczeniowych.</p>
+    </div>
+
+    <button type="button" (click)="goBack()">Powrót</button>
+  </header>
+
+  <section class="toolbar">
+    <button type="button" (click)="showAddMeetingForm()">Dodaj spotkanie</button>
+  </section>
+
+    <section class="details-card" *ngIf="selectedMeeting">
+    <div class="details-header">
+        <div>
+        <h2>Szczegóły spotkania</h2>
+        </div>
+
+        <button type="button" class="secondary-button" (click)="closeDetails()">
+        Zamknij
+        </button>
+    </div>
+
+    <div class="details-grid">
+        <div>
+        <strong>Tytuł:</strong>
+        <span>{{ selectedMeeting.title }}</span>
+        </div>
+
+      <div>
+        <strong>Typ:</strong>
+        <span>{{ selectedMeeting.meetingType }}</span>
+      </div>
+
+      <div>
+        <strong>Agent:</strong>
+        <span>{{ selectedMeeting.agentName }}</span>
+      </div>
+
+      <div>
+        <strong>Status:</strong>
+        <span>{{ selectedMeeting.status }}</span>
+      </div>
+
+      <div>
+        <strong>Rozpoczęcie:</strong>
+        <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+      </div>
+
+      <div>
+        <strong>Zakończenie:</strong>
+        <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+      </div>
+
+      <div class="details-description">
+        <strong>Opis:</strong>
+        <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-card" *ngIf="showForm">
+    <h2>{{ editMode ? 'Edycja spotkania' : 'Dodawanie nowego spotkania' }}</h2>
+
+    <form (ngSubmit)="saveMeeting()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="title">Tytuł spotkania</label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            [(ngModel)]="meetingForm.title"
+            placeholder="np. Spotkanie"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="meetingType">Typ spotkania</label>
+          <select
+            id="meetingType"
+            name="meetingType"
+            [(ngModel)]="meetingForm.meetingType"
+          >
+            <option *ngFor="let type of meetingTypes" [value]="type">
+              {{ type }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="startDate">Data rozpoczęcia</label>
+          <input
+            id="startDate"
+            name="startDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.startDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="endDate">Data zakończenia</label>
+          <input
+            id="endDate"
+            name="endDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.endDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="agentId">Przypisany agent</label>
+          <select
+            id="agentId"
+            name="agentId"
+            [(ngModel)]="meetingForm.agentId"
+          >
+            <option [ngValue]="null">Wybierz agenta</option>
+
+            <option *ngFor="let agent of agents" [ngValue]="agent.id">
+              {{ agent.firstName }} {{ agent.lastName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="status">Status</label>
+          <select
+            id="status"
+            name="status"
+            [(ngModel)]="meetingForm.status"
+          >
+            <option *ngFor="let status of statuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Opis</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            [(ngModel)]="meetingForm.description"
+            placeholder="Dodatkowe informacje dotyczące spotkania"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancel()">
+          Anuluj
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="meetings-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Tytuł</th>
+          <th>Typ</th>
+          <th>Agent</th>
+          <th>Termin</th>
+          <th>Status</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let meeting of meetings">
+          <td>{{ meeting.title }}</td>
+          <td>{{ meeting.meetingType }}</td>
+          <td>{{ meeting.agentName }}</td>
+          <td>
+            {{ formatDate(meeting.startDate) }}
+            <br />
+            do {{ formatDate(meeting.endDate) }}
+          </td>
+          <td>
+            <select
+              [ngModel]="meeting.status"
+              (ngModelChange)="changeStatus(meeting, $event)"
+            >
+              <option *ngFor="let status of statuses" [value]="status">
+                {{ status }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <button type="button" (click)="editMeeting(meeting)">Edytuj</button>
+
+            <button type="button" (click)="showDetails(meeting)">
+              Szczegóły
+            </button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteMeeting(meeting)"
+            >
+              Usuń
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="empty-message" *ngIf="meetings.length === 0">
+      Brak zaplanowanych spotkań.
+    </p>
+  </section>
+</div>
