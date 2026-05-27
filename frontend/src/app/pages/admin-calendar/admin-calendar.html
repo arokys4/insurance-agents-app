@@ -1,0 +1,52 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Kalendarz spotkań</h1>
+      <p>Harmonogram spotkań przypisanych do agentów ubezpieczeniowych.</p>
+    </div>
+
+    <div>
+      <button type="button" (click)="goToMeetings()">Spotkania</button>
+      <button type="button" class="secondary-button" (click)="goBack()">Powrót</button>
+    </div>
+  </header>
+
+  <section class="summary-card">
+    <h2>Podsumowanie</h2>
+    <p>Liczba zaplanowanych pozycji w harmonogramie: {{ meetings.length }}</p>
+  </section>
+
+  <section class="calendar-list" *ngIf="calendarDays.length > 0">
+    <div class="day-card" *ngFor="let day of calendarDays">
+      <h2>{{ day.dateLabel }}</h2>
+
+      <div class="meeting-item" *ngFor="let meeting of day.meetings">
+        <div class="time">
+          {{ formatTime(meeting.startDate) }} - {{ formatTime(meeting.endDate) }}
+        </div>
+
+        <div class="meeting-content">
+          <h3>{{ meeting.title }}</h3>
+          <p>
+            <strong>Typ:</strong> {{ meeting.meetingType }}
+          </p>
+          <p>
+            <strong>Agent:</strong> {{ meeting.agentName }}
+          </p>
+          <p>
+            <strong>Status:</strong> {{ meeting.status }}
+          </p>
+          <p *ngIf="meeting.description">
+            <strong>Opis:</strong> {{ meeting.description }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="empty-card" *ngIf="calendarDays.length === 0">
+    <h2>Brak spotkań w kalendarzu</h2>
+    <p>Dodaj spotkanie w module spotkań, aby pojawiło się w harmonogramie.</p>
+    <button type="button" (click)="goToMeetings()">Przejdź do spotkań</button>
+  </section>
+</div>

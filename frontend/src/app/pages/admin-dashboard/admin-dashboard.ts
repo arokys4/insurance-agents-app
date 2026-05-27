@@ -17,7 +17,11 @@ export class AdminDashboard {
   goToMeetings(): void {
     this.router.navigate(['/admin/meetings']);
   }
-  
+
+  goToCalendar(): void {
+    this.router.navigate(['/admin/calendar']);
+  }
+
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

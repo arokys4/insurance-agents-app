@@ -5,6 +5,7 @@ import { AgentDashboard } from './pages/agent-dashboard/agent-dashboard';
 import { adminGuard, agentGuard } from './guards/auth.guard';
 import { AdminAgents } from './pages/admin-agents/admin-agents';
 import { AdminMeetings } from './pages/admin-meetings/admin-meetings';
+import { AdminCalendar } from './pages/admin-calendar/admin-calendar';
 
 
 export const routes: Routes = [
@@ -36,6 +37,11 @@ export const routes: Routes = [
     path: 'agent',
     component: AgentDashboard,
     canActivate: [agentGuard]
+  },
+  {
+    path: 'admin/calendar',
+    component: AdminCalendar,
+    canActivate: [adminGuard]
   },
   {
     path: '**',
