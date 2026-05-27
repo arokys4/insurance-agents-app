@@ -5,11 +5,11 @@
       <p>Lista agentów ubezpieczeniowych przypisanych do zespołu.</p>
     </div>
 
-    <button (click)="goBack()">Powrót</button>
+    <button type="button" (click)="goBack()">Powrót</button>
   </header>
 
   <section class="toolbar">
-    <button (click)="showAddAgentForm()">Dodaj agenta</button>
+    <button type="button" (click)="showAddAgentForm()">Dodaj agenta</button>
   </section>
 
   <section class="form-card" *ngIf="showForm">
@@ -99,31 +99,35 @@
       </thead>
 
       <tbody>
-        <tr *ngFor="let agent of agents; let i = index">
+        <tr *ngFor="let agent of agents">
           <td>{{ agent.firstName }} {{ agent.lastName }}</td>
           <td>{{ agent.email }}</td>
           <td>{{ agent.phone }}</td>
           <td>{{ agent.status }}</td>
           <td>
-            <button (click)="editAgent(i)">Edytuj</button>
-            <button>Szczegóły</button>
+            <button type="button" (click)="editAgent(agent)">Edytuj</button>
+
+            <button type="button">Szczegóły</button>
 
             <button
+              type="button"
               class="danger-button"
               *ngIf="agent.status === 'Aktywny' || agent.status === 'Aktywna'"
-              (click)="deactivateAgent(i)"
+              (click)="deactivateAgent(agent)"
             >
               Dezaktywuj
             </button>
 
             <button
+              type="button"
               class="success-button"
               *ngIf="agent.status === 'Nieaktywny'"
-              (click)="activateAgent(i)"
+              (click)="activateAgent(agent)"
             >
               Aktywuj
             </button>
           </td>
+        </tr>
       </tbody>
     </table>
   </section>

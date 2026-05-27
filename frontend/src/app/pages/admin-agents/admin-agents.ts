@@ -1,7 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+
+interface Agent {
+  id?: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-admin-agents',
@@ -9,36 +19,16 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './admin-agents.html',
   styleUrl: './admin-agents.css'
 })
-export class AdminAgents {
+export class AdminAgents implements OnInit {
+  private apiUrl = 'http://localhost:4000/api/agents';
+
   showForm = false;
   editMode = false;
-  editedAgentIndex: number | null = null;
+  editedAgentId: number | null = null;
 
-  agents = [
-    {
-      firstName: 'Jan',
-      lastName: 'Kowalski',
-      email: 'jan.kowalski@firma.pl',
-      phone: '500 100 200',
-      status: 'Aktywny'
-    },
-    {
-      firstName: 'Anna',
-      lastName: 'Nowak',
-      email: 'anna.nowak@firma.pl',
-      phone: '500 300 400',
-      status: 'Aktywna'
-    },
-    {
-      firstName: 'Piotr',
-      lastName: 'Wiśniewski',
-      email: 'piotr.wisniewski@firma.pl',
-      phone: '500 500 600',
-      status: 'Nieaktywny'
-    }
-  ];
+  agents: Agent[] = [];
 
-  agentForm = {
+  agentForm: Agent = {
     firstName: '',
     lastName: '',
     email: '',
@@ -46,12 +36,31 @@ export class AdminAgents {
     status: 'Aktywny'
   };
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private http: HttpClient
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAgents();
+  }
+
+  loadAgents(): void {
+    this.http.get<Agent[]>(this.apiUrl).subscribe({
+      next: (agents) => {
+        this.agents = agents;
+      },
+      error: (error) => {
+        console.error('Błąd pobierania agentów:', error);
+        alert('Nie udało się pobrać listy agentów z serwera.');
+      }
+    });
+  }
 
   showAddAgentForm(): void {
     this.clearForm();
     this.editMode = false;
-    this.editedAgentIndex = null;
+    this.editedAgentId = null;
     this.showForm = true;
   }
 
@@ -66,71 +75,90 @@ export class AdminAgents {
       return;
     }
 
-    if (this.editMode && this.editedAgentIndex !== null) {
-      this.agents[this.editedAgentIndex] = {
-        firstName: this.agentForm.firstName,
-        lastName: this.agentForm.lastName,
-        email: this.agentForm.email,
-        phone: this.agentForm.phone,
-        status: this.agentForm.status
-      };
+    if (this.editMode && this.editedAgentId !== null) {
+      this.http.put<Agent>(`${this.apiUrl}/${this.editedAgentId}`, this.agentForm).subscribe({
+        next: () => {
+          this.loadAgents();
+          this.cancel();
+        },
+        error: (error) => {
+          console.error('Błąd edycji agenta:', error);
+          alert('Nie udało się zaktualizować danych agenta.');
+        }
+      });
     } else {
-      this.agents.push({
-        firstName: this.agentForm.firstName,
-        lastName: this.agentForm.lastName,
-        email: this.agentForm.email,
-        phone: this.agentForm.phone,
-        status: this.agentForm.status
+      this.http.post<Agent>(this.apiUrl, this.agentForm).subscribe({
+        next: () => {
+          this.loadAgents();
+          this.cancel();
+        },
+        error: (error) => {
+          console.error('Błąd dodawania agenta:', error);
+          alert('Nie udało się dodać agenta.');
+        }
       });
     }
-
-    this.clearForm();
-    this.showForm = false;
-    this.editMode = false;
-    this.editedAgentIndex = null;
   }
 
-  editAgent(index: number): void {
-    const selectedAgent = this.agents[index];
-
+  editAgent(agent: Agent): void {
     this.agentForm = {
-      firstName: selectedAgent.firstName,
-      lastName: selectedAgent.lastName,
-      email: selectedAgent.email,
-      phone: selectedAgent.phone,
-      status: selectedAgent.status
+      firstName: agent.firstName,
+      lastName: agent.lastName,
+      email: agent.email,
+      phone: agent.phone,
+      status: agent.status
     };
 
     this.editMode = true;
-    this.editedAgentIndex = index;
+    this.editedAgentId = agent.id ?? null;
     this.showForm = true;
   }
 
-  deactivateAgent(index: number): void {
-  const confirmDeactivate = confirm('Czy na pewno chcesz dezaktywować tego agenta?');
+  deactivateAgent(agent: Agent): void {
+    if (!agent.id) {
+      return;
+    }
 
-  if (!confirmDeactivate) {
-    return;
+    const confirmDeactivate = confirm('Czy na pewno chcesz dezaktywować tego agenta?');
+
+    if (!confirmDeactivate) {
+      return;
+    }
+
+    this.changeAgentStatus(agent.id, 'Nieaktywny');
   }
 
-  this.agents[index].status = 'Nieaktywny';
+  activateAgent(agent: Agent): void {
+    if (!agent.id) {
+      return;
+    }
+
+    const confirmActivate = confirm('Czy na pewno chcesz ponownie aktywować tego agenta?');
+
+    if (!confirmActivate) {
+      return;
+    }
+
+    this.changeAgentStatus(agent.id, 'Aktywny');
   }
 
-  activateAgent(index: number): void {
-  const confirmActivate = confirm('Czy na pewno chcesz ponownie aktywować tego agenta?');
-
-  if (!confirmActivate) {
-    return;
-  }
-
-  this.agents[index].status = 'Aktywny';
+  changeAgentStatus(id: number, status: string): void {
+    this.http.patch<Agent>(`${this.apiUrl}/${id}/status`, { status }).subscribe({
+      next: () => {
+        this.loadAgents();
+      },
+      error: (error) => {
+        console.error('Błąd zmiany statusu agenta:', error);
+        alert('Nie udało się zmienić statusu agenta.');
+      }
+    });
   }
 
   cancel(): void {
     this.clearForm();
     this.showForm = false;
     this.editMode = false;
-    this.editedAgentIndex = null;
+    this.editedAgentId = null;
   }
 
   clearForm(): void {
