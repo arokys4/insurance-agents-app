@@ -107,8 +107,23 @@
           <td>
             <button (click)="editAgent(i)">Edytuj</button>
             <button>Szczegóły</button>
+
+            <button
+              class="danger-button"
+              *ngIf="agent.status === 'Aktywny' || agent.status === 'Aktywna'"
+              (click)="deactivateAgent(i)"
+            >
+              Dezaktywuj
+            </button>
+
+            <button
+              class="success-button"
+              *ngIf="agent.status === 'Nieaktywny'"
+              (click)="activateAgent(i)"
+            >
+              Aktywuj
+            </button>
           </td>
-        </tr>
       </tbody>
     </table>
   </section>

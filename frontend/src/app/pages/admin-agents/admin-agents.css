@@ -114,3 +114,19 @@ td {
 td button {
   margin-bottom: 4px;
 }
+
+.danger-button {
+  background: #b00020;
+}
+
+.danger-button:hover {
+  background: #8c001a;
+}
+
+.success-button {
+  background: #198754;
+}
+
+.success-button:hover {
+  background: #146c43;
+}

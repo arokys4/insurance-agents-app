@@ -106,6 +106,26 @@ export class AdminAgents {
     this.showForm = true;
   }
 
+  deactivateAgent(index: number): void {
+  const confirmDeactivate = confirm('Czy na pewno chcesz dezaktywować tego agenta?');
+
+  if (!confirmDeactivate) {
+    return;
+  }
+
+  this.agents[index].status = 'Nieaktywny';
+  }
+
+  activateAgent(index: number): void {
+  const confirmActivate = confirm('Czy na pewno chcesz ponownie aktywować tego agenta?');
+
+  if (!confirmActivate) {
+    return;
+  }
+
+  this.agents[index].status = 'Aktywny';
+  }
+
   cancel(): void {
     this.clearForm();
     this.showForm = false;
