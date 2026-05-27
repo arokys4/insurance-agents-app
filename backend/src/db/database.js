@@ -33,6 +33,19 @@ async function openDatabase() {
     );
   `);
 
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS work_time_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id INTEGER NOT NULL,
+      work_date TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (agent_id) REFERENCES agents(id)
+    );
+  `);
+  
   return db;
 }
 

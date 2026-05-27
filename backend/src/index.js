@@ -3,6 +3,7 @@ const cors = require('cors');
 const { openDatabase } = require('./db/database');
 const agentsRouter = require('./routes/agents.routes');
 const meetingsRouter = require('./routes/meetings.routes');
+const workTimeRouter = require('./routes/work-time.routes');
 
 async function startServer() {
   const app = express();
@@ -22,6 +23,7 @@ async function startServer() {
 
   app.use('/api/agents', agentsRouter(db));
   app.use('/api/meetings', meetingsRouter(db));
+  app.use('/api/work-time', workTimeRouter(db));
   const PORT = 4000;
 
   app.listen(PORT, () => {

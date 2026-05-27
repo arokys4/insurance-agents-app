@@ -1,0 +1,179 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Ewidencja czasu pracy</h1>
+      <p>Rejestr czasu pracy agentów ubezpieczeniowych.</p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">Powrót</button>
+  </header>
+
+  <section class="toolbar">
+    <button type="button" (click)="showAddEntryForm()">Dodaj wpis</button>
+  </section>
+
+  <section class="details-card" *ngIf="selectedEntry">
+    <div class="details-header">
+      <div>
+        <h2>Szczegóły wpisu</h2>
+        <p>Dane wpisu czasu pracy wybranego agenta.</p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="closeDetails()">
+        Zamknij
+      </button>
+    </div>
+
+    <div class="details-grid">
+      <div>
+        <strong>Agent:</strong>
+        <span>{{ selectedEntry.agentName }}</span>
+      </div>
+
+      <div>
+        <strong>Data:</strong>
+        <span>{{ formatDate(selectedEntry.workDate) }}</span>
+      </div>
+
+      <div>
+        <strong>Godzina rozpoczęcia:</strong>
+        <span>{{ selectedEntry.startTime }}</span>
+      </div>
+
+      <div>
+        <strong>Godzina zakończenia:</strong>
+        <span>{{ selectedEntry.endTime }}</span>
+      </div>
+
+      <div>
+        <strong>Liczba godzin:</strong>
+        <span>{{ formatHours(selectedEntry.durationHours) }}</span>
+      </div>
+
+      <div class="details-description">
+        <strong>Opis:</strong>
+        <span>{{ selectedEntry.description || 'Brak opisu' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-card" *ngIf="showForm">
+    <h2>{{ editMode ? 'Edycja wpisu czasu pracy' : 'Dodawanie wpisu czasu pracy' }}</h2>
+
+    <form (ngSubmit)="saveEntry()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="agentId">Agent</label>
+          <select
+            id="agentId"
+            name="agentId"
+            [(ngModel)]="entryForm.agentId"
+          >
+            <option [ngValue]="null">Wybierz agenta</option>
+
+            <option *ngFor="let agent of agents" [ngValue]="agent.id">
+              {{ agent.firstName }} {{ agent.lastName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="workDate">Data pracy</label>
+          <input
+            id="workDate"
+            name="workDate"
+            type="date"
+            [(ngModel)]="entryForm.workDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="startTime">Godzina rozpoczęcia</label>
+          <input
+            id="startTime"
+            name="startTime"
+            type="time"
+            [(ngModel)]="entryForm.startTime"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="endTime">Godzina zakończenia</label>
+          <input
+            id="endTime"
+            name="endTime"
+            type="time"
+            [(ngModel)]="entryForm.endTime"
+          />
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Opis pracy</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            [(ngModel)]="entryForm.description"
+            placeholder="np. Spotkania z klientami, oględziny szkody, praca biurowa"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancel()">
+          Anuluj
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="work-time-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Data</th>
+          <th>Od</th>
+          <th>Do</th>
+          <th>Liczba godzin</th>
+          <th>Opis</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let entry of entries">
+          <td>{{ entry.agentName }}</td>
+          <td>{{ formatDate(entry.workDate) }}</td>
+          <td>{{ entry.startTime }}</td>
+          <td>{{ entry.endTime }}</td>
+          <td>{{ formatHours(entry.durationHours) }}</td>
+          <td>{{ entry.description || '-' }}</td>
+          <td>
+            <button type="button" (click)="editEntry(entry)">Edytuj</button>
+
+            <button type="button" (click)="showDetails(entry)">
+              Szczegóły
+            </button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteEntry(entry)"
+            >
+              Usuń
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="empty-message" *ngIf="entries.length === 0">
+      Brak wpisów czasu pracy.
+    </p>
+  </section>
+</div>
