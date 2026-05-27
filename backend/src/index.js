@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { openDatabase } = require('./db/database');
 const agentsRouter = require('./routes/agents.routes');
+const meetingsRouter = require('./routes/meetings.routes');
 
 async function startServer() {
   const app = express();
@@ -20,7 +21,7 @@ async function startServer() {
   });
 
   app.use('/api/agents', agentsRouter(db));
-
+  app.use('/api/meetings', meetingsRouter(db));
   const PORT = 4000;
 
   app.listen(PORT, () => {
