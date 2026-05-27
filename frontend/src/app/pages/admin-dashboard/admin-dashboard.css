@@ -6,7 +6,7 @@
 }
 
 h1 {
-  color: #1f3c88;
+  color: #198754;
 }
 
 .cards {
@@ -28,7 +28,7 @@ h1 {
 }
 
 .card:hover {
-  border-color: #1f3c88;
+  border-color: #198754;
   transform: translateY(-3px);
   box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
@@ -38,7 +38,7 @@ button {
   padding: 10px 18px;
   border: none;
   border-radius: 6px;
-  background: #1f3c88;
+  background: #198754;
   color: white;
   cursor: pointer;
 }

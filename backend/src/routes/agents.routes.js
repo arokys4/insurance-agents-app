@@ -1,5 +1,89 @@
 const express = require('express');
 
+function formatName(value) {
+  const trimmedValue = value.trim().toLocaleLowerCase('pl-PL');
+
+  if (!trimmedValue) {
+    return '';
+  }
+
+  return (
+    trimmedValue.charAt(0).toLocaleUpperCase('pl-PL') +
+    trimmedValue.slice(1)
+  );
+}
+
+function isOnlyLetters(value) {
+  const lettersRegex = /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+$/;
+  return lettersRegex.test(value);
+}
+
+function isValidEmail(value) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(value);
+}
+
+function validateAgentData(data) {
+  const firstName = formatName(data.firstName || '');
+  const lastName = formatName(data.lastName || '');
+  const email = (data.email || '').trim().toLowerCase();
+  const phone = (data.phone || '').replace(/\D/g, '').slice(0, 9);
+  const status = data.status || 'Aktywny';
+
+  if (!firstName || !lastName || !email || !phone) {
+    return {
+      valid: false,
+      error: 'Uzupełnij wszystkie wymagane pola.'
+    };
+  }
+
+  if (!isOnlyLetters(firstName)) {
+    return {
+      valid: false,
+      error: 'Imię może zawierać tylko litery.'
+    };
+  }
+
+  if (!isOnlyLetters(lastName)) {
+    return {
+      valid: false,
+      error: 'Nazwisko może zawierać tylko litery.'
+    };
+  }
+
+  if (!isValidEmail(email)) {
+    return {
+      valid: false,
+      error: 'Adres e-mail musi mieć poprawny format, np. jan.kowalski@firma.pl.'
+    };
+  }
+
+  if (phone.length !== 9) {
+    return {
+      valid: false,
+      error: 'Numer telefonu musi składać się dokładnie z 9 cyfr.'
+    };
+  }
+
+  if (status !== 'Aktywny' && status !== 'Nieaktywny') {
+    return {
+      valid: false,
+      error: 'Nieprawidłowy status agenta.'
+    };
+  }
+
+  return {
+    valid: true,
+    agent: {
+      firstName,
+      lastName,
+      email,
+      phone,
+      status
+    }
+  };
+}
+
 function agentsRouter(db) {
   const router = express.Router();
 
@@ -19,6 +103,8 @@ function agentsRouter(db) {
 
       res.json(agents);
     } catch (error) {
+      console.error('Błąd pobierania agentów:', error);
+
       res.status(500).json({
         error: 'Nie udało się pobrać listy agentów.'
       });
@@ -27,20 +113,22 @@ function agentsRouter(db) {
 
   router.post('/', async (req, res) => {
     try {
-      const { firstName, lastName, email, phone, status } = req.body;
+      const validation = validateAgentData(req.body);
 
-      if (!firstName || !lastName || !email || !phone) {
+      if (!validation.valid) {
         return res.status(400).json({
-          error: 'Uzupełnij wszystkie wymagane pola.'
+          error: validation.error
         });
       }
+
+      const { firstName, lastName, email, phone, status } = validation.agent;
 
       const result = await db.run(
         `
         INSERT INTO agents (first_name, last_name, email, phone, status)
         VALUES (?, ?, ?, ?, ?)
         `,
-        [firstName, lastName, email, phone, status || 'Aktywny']
+        [firstName, lastName, email, phone, status]
       );
 
       const createdAgent = await db.get(
@@ -60,6 +148,14 @@ function agentsRouter(db) {
 
       res.status(201).json(createdAgent);
     } catch (error) {
+      console.error('Błąd dodawania agenta:', error);
+
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        return res.status(409).json({
+          error: 'Agent z takim adresem e-mail już istnieje.'
+        });
+      }
+
       res.status(500).json({
         error: 'Nie udało się dodać agenta.'
       });
@@ -69,11 +165,29 @@ function agentsRouter(db) {
   router.put('/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { firstName, lastName, email, phone, status } = req.body;
 
-      if (!firstName || !lastName || !email || !phone) {
+      const validation = validateAgentData(req.body);
+
+      if (!validation.valid) {
         return res.status(400).json({
-          error: 'Uzupełnij wszystkie wymagane pola.'
+          error: validation.error
+        });
+      }
+
+      const { firstName, lastName, email, phone, status } = validation.agent;
+
+      const existingAgent = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+      if (!existingAgent) {
+        return res.status(404).json({
+          error: 'Nie znaleziono agenta.'
         });
       }
 
@@ -103,6 +217,14 @@ function agentsRouter(db) {
 
       res.json(updatedAgent);
     } catch (error) {
+      console.error('Błąd edycji agenta:', error);
+
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        return res.status(409).json({
+          error: 'Agent z takim adresem e-mail już istnieje.'
+        });
+      }
+
       res.status(500).json({
         error: 'Nie udało się zaktualizować agenta.'
       });
@@ -114,9 +236,24 @@ function agentsRouter(db) {
       const { id } = req.params;
       const { status } = req.body;
 
-      if (!status) {
+      if (status !== 'Aktywny' && status !== 'Nieaktywny') {
         return res.status(400).json({
-          error: 'Nie podano statusu.'
+          error: 'Nieprawidłowy status agenta.'
+        });
+      }
+
+      const existingAgent = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+      if (!existingAgent) {
+        return res.status(404).json({
+          error: 'Nie znaleziono agenta.'
         });
       }
 
@@ -146,8 +283,49 @@ function agentsRouter(db) {
 
       res.json(updatedAgent);
     } catch (error) {
+      console.error('Błąd zmiany statusu agenta:', error);
+
       res.status(500).json({
         error: 'Nie udało się zmienić statusu agenta.'
+      });
+    }
+  });
+
+  router.delete('/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const agent = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+      if (!agent) {
+        return res.status(404).json({
+          error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      await db.run(
+        `
+        DELETE FROM agents
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+      res.json({
+        message: 'Agent został usunięty.'
+      });
+    } catch (error) {
+      console.error('Błąd usuwania agenta:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się usunąć agenta.'
       });
     }
   });

@@ -12,21 +12,62 @@
     <button type="button" (click)="showAddAgentForm()">Dodaj agenta</button>
   </section>
 
+  <section class="details-card" *ngIf="selectedAgent">
+    <div class="details-header">
+      <div>
+        <h2>Szczegóły agenta</h2>
+        <p>{{ selectedAgent.firstName }} {{ selectedAgent.lastName }}</p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="closeDetails()">
+        Zamknij
+      </button>
+    </div>
+
+    <div class="details-grid">
+      <div>
+        <strong>Imię:</strong>
+        <span>{{ selectedAgent.firstName }}</span>
+      </div>
+
+      <div>
+        <strong>Nazwisko:</strong>
+        <span>{{ selectedAgent.lastName }}</span>
+      </div>
+
+      <div>
+        <strong>E-mail:</strong>
+        <span>{{ selectedAgent.email }}</span>
+      </div>
+
+      <div>
+        <strong>Telefon:</strong>
+        <span>{{ selectedAgent.phone }}</span>
+      </div>
+
+      <div>
+        <strong>Status:</strong>
+        <span>{{ selectedAgent.status }}</span>
+      </div>
+    </div>
+  </section>
+
   <section class="form-card" *ngIf="showForm">
     <h2>{{ editMode ? 'Edycja agenta' : 'Dodawanie nowego agenta' }}</h2>
 
     <form (ngSubmit)="saveAgent()">
       <div class="form-grid">
         <div class="form-field">
-          <label for="firstName">Imię</label>
+        <label for="firstName">Imię</label>
           <input
             id="firstName"
             name="firstName"
             type="text"
             [(ngModel)]="agentForm.firstName"
+            (blur)="formatFirstName()"
             placeholder="np. Adam"
           />
-        </div>
+      </div>
 
         <div class="form-field">
           <label for="lastName">Nazwisko</label>
@@ -35,6 +76,7 @@
             name="lastName"
             type="text"
             [(ngModel)]="agentForm.lastName"
+            (blur)="formatLastName()"
             placeholder="np. Zieliński"
           />
         </div>
@@ -56,8 +98,11 @@
             id="phone"
             name="phone"
             type="text"
+            inputmode="numeric"
+            maxlength="9"
             [(ngModel)]="agentForm.phone"
-            placeholder="np. 500 700 800"
+            (input)="onPhoneInput($event)"
+            placeholder="np. 500700800"
           />
         </div>
 
@@ -107,7 +152,9 @@
           <td>
             <button type="button" (click)="editAgent(agent)">Edytuj</button>
 
-            <button type="button">Szczegóły</button>
+            <button type="button" (click)="showDetails(agent)">
+              Szczegóły
+            </button>
 
             <button
               type="button"
@@ -125,6 +172,14 @@
               (click)="activateAgent(agent)"
             >
               Aktywuj
+            </button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteAgent(agent)"
+            >
+              Usuń
             </button>
           </td>
         </tr>
