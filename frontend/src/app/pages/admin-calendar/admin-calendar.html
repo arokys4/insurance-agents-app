@@ -2,51 +2,77 @@
   <header class="header">
     <div>
       <h1>Kalendarz spotkań</h1>
-      <p>Harmonogram spotkań przypisanych do agentów ubezpieczeniowych.</p>
+      <p>Tygodniowy harmonogram pracy agentów ubezpieczeniowych.</p>
     </div>
 
-    <div>
+    <div class="header-actions">
       <button type="button" (click)="goToMeetings()">Spotkania</button>
       <button type="button" class="secondary-button" (click)="goBack()">Powrót</button>
     </div>
   </header>
 
-  <section class="summary-card">
-    <h2>Podsumowanie</h2>
-    <p>Liczba zaplanowanych pozycji w harmonogramie: {{ meetings.length }}</p>
+  <section class="calendar-toolbar">
+    <button type="button" (click)="previousWeek()">‹ Poprzedni tydzień</button>
+
+    <div class="week-title">
+      <h2>{{ getWeekLabel() }}</h2>
+      <p>Liczba spotkań w systemie: {{ meetings.length }}</p>
+    </div>
+
+    <button type="button" (click)="nextWeek()">Następny tydzień ›</button>
+    <button type="button" class="today-button" (click)="goToToday()">Dzisiaj</button>
   </section>
 
-  <section class="calendar-list" *ngIf="calendarDays.length > 0">
-    <div class="day-card" *ngFor="let day of calendarDays">
-      <h2>{{ day.dateLabel }}</h2>
+  <section class="calendar">
+    <div class="calendar-header">
+      <div class="time-header"></div>
 
-      <div class="meeting-item" *ngFor="let meeting of day.meetings">
-        <div class="time">
-          {{ formatTime(meeting.startDate) }} - {{ formatTime(meeting.endDate) }}
+      <div
+        class="day-header"
+        *ngFor="let day of weekDays"
+        [class.today-header]="isToday(day)"
+      >
+        <span class="day-name">{{ day.dayName }}</span>
+        <span class="day-number">{{ day.dayNumber }}</span>
+      </div>
+    </div>
+
+    <div class="calendar-body">
+      <div class="calendar-row" *ngFor="let hour of hours">
+        <div class="time-cell">
+          {{ hour }}
         </div>
 
-        <div class="meeting-content">
-          <h3>{{ meeting.title }}</h3>
-          <p>
-            <strong>Typ:</strong> {{ meeting.meetingType }}
-          </p>
-          <p>
-            <strong>Agent:</strong> {{ meeting.agentName }}
-          </p>
-          <p>
-            <strong>Status:</strong> {{ meeting.status }}
-          </p>
-          <p *ngIf="meeting.description">
-            <strong>Opis:</strong> {{ meeting.description }}
-          </p>
+        <div class="day-cell" *ngFor="let day of weekDays">
+          <div
+            class="meeting-block"
+            *ngFor="let meeting of getMeetingsForDayAndHour(day, hour)"
+            [class]="getStatusClass(meeting.status)"
+          >
+            <div class="meeting-time">
+              {{ formatMeetingTime(meeting) }}
+            </div>
+
+            <div class="meeting-title">
+              {{ meeting.title }}
+            </div>
+
+            <div class="meeting-agent">
+              {{ meeting.agentName }}
+            </div>
+
+            <div class="meeting-status">
+              {{ meeting.status }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="empty-card" *ngIf="calendarDays.length === 0">
-    <h2>Brak spotkań w kalendarzu</h2>
-    <p>Dodaj spotkanie w module spotkań, aby pojawiło się w harmonogramie.</p>
+  <section class="empty-card" *ngIf="meetings.length === 0">
+    <h2>Brak spotkań</h2>
+    <p>Dodaj spotkanie w module spotkań, aby pojawiło się w kalendarzu.</p>
     <button type="button" (click)="goToMeetings()">Przejdź do spotkań</button>
   </section>
 </div>

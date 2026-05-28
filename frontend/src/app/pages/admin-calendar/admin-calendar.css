@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 40px;
+  padding: 32px;
   background: #f4f6f8;
   font-family: Arial, sans-serif;
 }
@@ -9,15 +9,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 24px;
 }
 
 .header h1 {
   color: #198754;
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;
 }
 
 .header p {
   color: #555;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 button {
@@ -27,7 +34,7 @@ button {
   background: #198754;
   color: white;
   cursor: pointer;
-  margin-left: 8px;
+  font-weight: bold;
 }
 
 button:hover {
@@ -42,8 +49,184 @@ button:hover {
   background: #5a6268;
 }
 
-.summary-card,
-.day-card,
+.today-button {
+  background: #0f5132;
+}
+
+.today-button:hover {
+  background: #0b3d26;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 18px 24px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.week-title {
+  flex: 1;
+  text-align: center;
+}
+
+.week-title h2 {
+  margin: 0;
+  color: #198754;
+}
+
+.week-title p {
+  margin: 6px 0 0 0;
+  color: #555;
+}
+
+.calendar {
+  background: white;
+  border-radius: 12px;
+  overflow: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: 80px repeat(7, minmax(150px, 1fr));
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: white;
+  border-bottom: 2px solid #e0e4ea;
+}
+
+.time-header {
+  border-right: 1px solid #e0e4ea;
+}
+
+.day-header {
+  min-height: 76px;
+  padding: 14px;
+  text-align: center;
+  border-right: 1px solid #e0e4ea;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.day-name {
+  color: #555;
+  font-size: 13px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.day-number {
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: bold;
+  color: #222;
+}
+
+.today-header .day-number {
+  background: #198754;
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.calendar-body {
+  min-width: 1130px;
+}
+
+.calendar-row {
+  display: grid;
+  grid-template-columns: 80px repeat(7, minmax(150px, 1fr));
+  min-height: 86px;
+  border-bottom: 1px solid #e0e4ea;
+}
+
+.time-cell {
+  padding: 12px 10px;
+  color: #555;
+  font-size: 13px;
+  font-weight: bold;
+  border-right: 1px solid #e0e4ea;
+  background: #fafafa;
+}
+
+.day-cell {
+  position: relative;
+  padding: 8px;
+  border-right: 1px solid #e0e4ea;
+  background: #ffffff;
+}
+
+.day-cell:hover {
+  background: #f8fbf9;
+}
+
+.meeting-block {
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  color: white;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  cursor: default;
+}
+
+.meeting-time {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.meeting-title {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.meeting-agent {
+  opacity: 0.95;
+  margin-bottom: 4px;
+}
+
+.meeting-status {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.status-planned {
+  background: #198754;
+}
+
+.status-progress {
+  background: #0d6efd;
+}
+
+.status-completed {
+  background: #20c997;
+}
+
+.status-postponed {
+  background: #fd7e14;
+}
+
+.status-cancelled {
+  background: #6c757d;
+}
+
+.status-default {
+  background: #198754;
+}
+
 .empty-card {
   background: white;
   padding: 24px;
@@ -52,35 +235,7 @@ button:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.summary-card h2,
-.day-card h2,
 .empty-card h2 {
   margin-top: 0;
   color: #198754;
-}
-
-.meeting-item {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 20px;
-  padding: 16px 0;
-  border-top: 1px solid #e0e4ea;
-}
-
-.meeting-item:first-of-type {
-  border-top: none;
-}
-
-.time {
-  font-weight: bold;
-  color: #198754;
-}
-
-.meeting-content h3 {
-  margin: 0 0 8px 0;
-}
-
-.meeting-content p {
-  margin: 4px 0;
-  color: #333;
 }

@@ -16,9 +16,10 @@ interface Meeting {
 }
 
 interface CalendarDay {
+  date: Date;
   dateKey: string;
-  dateLabel: string;
-  meetings: Meeting[];
+  dayName: string;
+  dayNumber: number;
 }
 
 @Component({
@@ -31,7 +32,25 @@ export class AdminCalendar implements OnInit {
   private meetingsApiUrl = 'http://localhost:4000/api/meetings';
 
   meetings: Meeting[] = [];
-  calendarDays: CalendarDay[] = [];
+  weekDays: CalendarDay[] = [];
+
+  currentWeekStart = this.getStartOfWeek(new Date());
+
+  hours = [
+    '07:00',
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00'
+  ];
 
   constructor(
     private router: Router,
@@ -39,6 +58,7 @@ export class AdminCalendar implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.generateWeekDays();
     this.loadMeetings();
   }
 
@@ -46,7 +66,6 @@ export class AdminCalendar implements OnInit {
     this.http.get<Meeting[]>(this.meetingsApiUrl).subscribe({
       next: (meetings) => {
         this.meetings = meetings;
-        this.groupMeetingsByDate();
       },
       error: (error) => {
         console.error('Błąd pobierania spotkań do kalendarza:', error);
@@ -55,37 +74,90 @@ export class AdminCalendar implements OnInit {
     });
   }
 
-  groupMeetingsByDate(): void {
-    const grouped = new Map<string, Meeting[]>();
+  generateWeekDays(): void {
+    this.weekDays = [];
 
-    for (const meeting of this.meetings) {
-      const dateKey = meeting.startDate.split('T')[0];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(this.currentWeekStart);
+      date.setDate(this.currentWeekStart.getDate() + i);
 
-      if (!grouped.has(dateKey)) {
-        grouped.set(dateKey, []);
-      }
-
-      grouped.get(dateKey)?.push(meeting);
+      this.weekDays.push({
+        date,
+        dateKey: this.getDateKey(date),
+        dayName: date.toLocaleDateString('pl-PL', { weekday: 'short' }),
+        dayNumber: date.getDate()
+      });
     }
-
-    this.calendarDays = Array.from(grouped.entries())
-      .map(([dateKey, meetings]) => ({
-        dateKey,
-        dateLabel: this.formatDateLabel(dateKey),
-        meetings: meetings.sort((a, b) =>
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        )
-      }))
-      .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   }
 
-  formatDateLabel(dateKey: string): string {
-    return new Date(dateKey).toLocaleDateString('pl-PL', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  getStartOfWeek(date: Date): Date {
+    const result = new Date(date);
+    const day = result.getDay();
+
+    const difference = day === 0 ? -6 : 1 - day;
+
+    result.setDate(result.getDate() + difference);
+    result.setHours(0, 0, 0, 0);
+
+    return result;
+  }
+
+  getDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  getMeetingsForDayAndHour(day: CalendarDay, hour: string): Meeting[] {
+    return this.meetings.filter((meeting) => {
+      const meetingDate = meeting.startDate.split('T')[0];
+      const meetingHour = meeting.startDate.split('T')[1]?.slice(0, 2);
+
+      return meetingDate === day.dateKey && meetingHour === hour.slice(0, 2);
     });
+  }
+
+  getWeekLabel(): string {
+    const firstDay = this.weekDays[0]?.date;
+    const lastDay = this.weekDays[6]?.date;
+
+    if (!firstDay || !lastDay) {
+      return '';
+    }
+
+    const first = firstDay.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: 'short'
+    });
+
+    const last = lastDay.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    return `${first} - ${last}`;
+  }
+
+  previousWeek(): void {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+    this.generateWeekDays();
+  }
+
+  nextWeek(): void {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+    this.generateWeekDays();
+  }
+
+  goToToday(): void {
+    this.currentWeekStart = this.getStartOfWeek(new Date());
+    this.generateWeekDays();
+  }
+
+  isToday(day: CalendarDay): boolean {
+    return day.dateKey === this.getDateKey(new Date());
   }
 
   formatTime(value: string): string {
@@ -93,6 +165,27 @@ export class AdminCalendar implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatMeetingTime(meeting: Meeting): string {
+    return `${this.formatTime(meeting.startDate)} - ${this.formatTime(meeting.endDate)}`;
+  }
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'Zaplanowane':
+        return 'status-planned';
+      case 'W realizacji':
+        return 'status-progress';
+      case 'Zakończone':
+        return 'status-completed';
+      case 'Przełożone':
+        return 'status-postponed';
+      case 'Anulowane':
+        return 'status-cancelled';
+      default:
+        return 'status-default';
+    }
   }
 
   goBack(): void {
