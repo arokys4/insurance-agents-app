@@ -318,3 +318,95 @@ td {
     margin-bottom: 6px;
   }
 }
+
+.attachments-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e4ea;
+}
+
+.attachments-header {
+  margin-bottom: 18px;
+}
+
+.attachments-header h3 {
+  margin: 0 0 6px 0;
+  color: #198754;
+}
+
+.attachments-header p {
+  margin: 0;
+  color: #555;
+}
+
+.attachment-form {
+  background: #f8fbf9;
+  border-radius: 8px;
+  padding: 18px;
+  border: 1px solid #d9e8df;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-form label {
+  font-weight: bold;
+  color: #198754;
+}
+
+.attachment-form input {
+  padding: 10px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+  background: white;
+}
+
+.selected-file {
+  margin: 0;
+  color: #555;
+}
+
+.attachments-list {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.attachment-card {
+  background: white;
+  border: 1px solid #d9e8df;
+  border-left: 5px solid #198754;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.attachment-card p {
+  margin: 6px 0 0 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.open-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: #198754;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.open-link:hover {
+  background: #146c43;
+}

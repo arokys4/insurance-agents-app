@@ -33,6 +33,16 @@ interface MeetingNote {
   updatedAt?: string;
 }
 
+interface MeetingAttachment {
+  id?: number;
+  meetingId: number;
+  originalName: string;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  uploadedAt?: string;
+}
+
 @Component({
   selector: 'app-admin-meetings',
   imports: [NgFor, NgIf, FormsModule],
@@ -43,6 +53,8 @@ export class AdminMeetings implements OnInit {
   private meetingsApiUrl = 'http://localhost:4000/api/meetings';
   private agentsApiUrl = 'http://localhost:4000/api/agents';
   private notesApiUrl = 'http://localhost:4000/api/meeting-notes';
+  private attachmentsApiUrl = 'http://localhost:4000/api/meeting-attachments';
+  private backendUrl = 'http://localhost:4000';
 
   meetings: Meeting[] = [];
   agents: Agent[] = [];
@@ -51,6 +63,9 @@ export class AdminMeetings implements OnInit {
   noteContent = '';
   editNoteMode = false;
   editedNoteId: number | null = null;
+
+  meetingAttachments: MeetingAttachment[] = [];
+  selectedFile: File | null = null;
 
   showForm = false;
   editMode = false;
@@ -225,11 +240,13 @@ export class AdminMeetings implements OnInit {
     }
   }
 
-  closeDetails(): void {
-    this.selectedMeeting = null;
-    this.meetingNotes = [];
-    this.clearNoteForm();
-  }
+    closeDetails(): void {
+      this.selectedMeeting = null;
+      this.meetingNotes = [];
+      this.meetingAttachments = [];
+      this.selectedFile = null;
+      this.clearNoteForm();
+    }
 
   loadNotes(meetingId: number): void {
     this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
@@ -345,6 +362,99 @@ export class AdminMeetings implements OnInit {
         alert(message);
       }
     });
+  }
+
+    loadAttachments(meetingId: number): void {
+    this.http.get<MeetingAttachment[]>(`${this.attachmentsApiUrl}/meeting/${meetingId}`).subscribe({
+      next: (attachments) => {
+        this.meetingAttachments = attachments;
+      },
+      error: (error) => {
+        console.error('Błąd pobierania załączników:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać załączników spotkania.';
+
+        alert(message);
+      }
+    });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (!input.files || input.files.length === 0) {
+      this.selectedFile = null;
+      return;
+    }
+
+    this.selectedFile = input.files[0];
+  }
+
+  uploadAttachment(): void {
+    if (!this.selectedMeeting?.id) {
+      alert('Nie wybrano spotkania.');
+      return;
+    }
+
+    if (!this.selectedFile) {
+      alert('Wybierz plik do dodania.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('meetingId', String(this.selectedMeeting.id));
+    formData.append('file', this.selectedFile);
+
+    this.http.post<MeetingAttachment>(this.attachmentsApiUrl, formData).subscribe({
+      next: () => {
+        this.loadAttachments(this.selectedMeeting!.id!);
+        this.selectedFile = null;
+
+        const fileInput = document.getElementById('attachmentFile') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      },
+      error: (error) => {
+        console.error('Błąd dodawania załącznika:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się dodać załącznika.';
+
+        alert(message);
+      }
+    });
+  }
+
+  deleteAttachment(attachment: MeetingAttachment): void {
+    if (!attachment.id || !this.selectedMeeting?.id) {
+      return;
+    }
+
+    const confirmDelete = confirm(`Czy na pewno chcesz usunąć załącznik "${attachment.originalName}"?`);
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    this.http.delete(`${this.attachmentsApiUrl}/${attachment.id}`).subscribe({
+      next: () => {
+        this.loadAttachments(this.selectedMeeting!.id!);
+      },
+      error: (error) => {
+        console.error('Błąd usuwania załącznika:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się usunąć załącznika.';
+
+        alert(message);
+      }
+    });
+  }
+
+  getAttachmentUrl(attachment: MeetingAttachment): string {
+    return `${this.backendUrl}${attachment.filePath}`;
   }
 
   clearNoteForm(): void {

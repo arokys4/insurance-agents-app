@@ -125,6 +125,70 @@
         Brak notatek dla tego spotkania.
       </p>
     </div>
+    
+    <div class="attachments-section">
+      <div class="attachments-header">
+        <div>
+          <h3>Załączniki do spotkania</h3>
+          <p>Dodaj dokument PDF lub zdjęcie jako potwierdzenie spotkania albo oględzin.</p>
+        </div>
+      </div>
+
+      <div class="attachment-form">
+        <label for="attachmentFile">Wybierz plik</label>
+
+        <input
+          id="attachmentFile"
+          name="attachmentFile"
+          type="file"
+          accept=".pdf,image/jpeg,image/png,image/webp"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="selected-file" *ngIf="selectedFile">
+          Wybrany plik: {{ selectedFile.name }}
+        </p>
+
+        <button type="button" (click)="uploadAttachment()">
+          Dodaj załącznik
+        </button>
+      </div>
+
+      <div class="attachments-list" *ngIf="meetingAttachments.length > 0">
+        <div class="attachment-card" *ngFor="let attachment of meetingAttachments">
+          <div>
+            <strong>{{ attachment.originalName }}</strong>
+            <p>
+              Typ: {{ attachment.mimeType }} |
+              Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+            </p>
+          </div>
+
+          <div class="attachment-actions">
+            <a
+              [href]="getAttachmentUrl(attachment)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="open-link"
+            >
+              Otwórz
+            </a>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteAttachment(attachment)"
+            >
+              Usuń
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p class="empty-message" *ngIf="meetingAttachments.length === 0">
+        Brak załączników dla tego spotkania.
+      </p>
+    </div>
   </section>
 
     <section class="form-card" *ngIf="showForm">

@@ -56,6 +56,20 @@ async function openDatabase() {
       FOREIGN KEY (meeting_id) REFERENCES meetings(id)
     );
   `);
+
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS meeting_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      meeting_id INTEGER NOT NULL,
+      original_name TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (meeting_id) REFERENCES meetings(id)
+    );
+  `);
+  
   return db;
 }
 
