@@ -1,13 +1,30 @@
-<div class="dashboard">
-  <h1>Panel szefa</h1>
-  <p>Zalogowano jako administrator systemu.</p>
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Panel szefa</h1>
+      <p>Zalogowano jako administrator systemu.</p>
+    </div>
 
-  <div class="cards">
-    <div class="card" (click)="goToAgents()">Agenci</div>
-    <div class="card" (click)="goToMeetings()">Spotkania</div>
-    <div class="card" (click)="goToCalendar()">Kalendarz</div>
-    <div class="card" (click)="goToWorkTime()">Ewidencja czasu pracy</div>
-  </div>
+    <button type="button" class="secondary-button" (click)="logout()">
+      Wyloguj
+    </button>
+  </header>
 
-  <button (click)="logout()">Wyloguj</button>
+  <section class="cards">
+    <div class="card" (click)="goToAgents()">
+      Agenci
+    </div>
+
+    <div class="card" (click)="goToMeetings()">
+      Spotkania
+    </div>
+
+    <div class="card" (click)="goToCalendar()">
+      Kalendarz
+    </div>
+
+    <div class="card" (click)="goToWorkTime()">
+      Ewidencja czasu pracy
+    </div>
+  </section>
 </div>

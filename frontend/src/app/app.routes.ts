@@ -8,6 +8,7 @@ import { AdminMeetings } from './pages/admin-meetings/admin-meetings';
 import { AdminCalendar } from './pages/admin-calendar/admin-calendar';
 import { AdminWorkTime } from './pages/admin-work-time/admin-work-time';
 import { ChangePassword } from './pages/change-password/change-password';
+import { AgentCalendar } from './pages/agent-calendar/agent-calendar';
 
 
 export const routes: Routes = [
@@ -43,6 +44,11 @@ export const routes: Routes = [
     path: 'agent',
     component: AgentDashboard,
     canActivate: [agentGuard]
+  },
+  {
+  path: 'agent/calendar',
+  component: AgentCalendar,
+  canActivate: [agentGuard]
   },
   {
     path: 'admin/calendar',

@@ -1,13 +1,313 @@
-<div class="dashboard">
-  <h1>Panel agenta</h1>
-  <p>Zalogowano jako agent ubezpieczeniowy.</p>
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Panel agenta</h1>
+      <p *ngIf="user">
+        Zalogowano jako: {{ user.firstName }} {{ user.lastName }}
+      </p>
+    </div>
 
-  <div class="cards">
-    <div class="card">Moje spotkania</div>
-    <div class="card">Mój kalendarz</div>
-    <div class="card">Czas pracy</div>
-    <div class="card">Notatki i załączniki</div>
-  </div>
+    <button type="button" class="secondary-button" (click)="logout()">
+      Wyloguj
+    </button>
+  </header>
 
-  <button (click)="logout()">Wyloguj</button>
+  <section class="agent-nav">
+    <div class="nav-card">
+      Moje spotkania
+    </div>
+
+    <div class="nav-card" (click)="goToCalendar()">
+      Mój kalendarz
+    </div>
+
+    <div class="nav-card disabled">
+      Czas pracy
+    </div>
+
+    <div class="nav-card disabled">
+      Dokumentacja
+    </div>
+  </section>
+
+  <section class="summary-grid" *ngIf="user">
+    <div class="summary-card">
+      <h2>Dane agenta</h2>
+
+      <p>
+        <strong>Imię i nazwisko:</strong>
+        {{ user.firstName }} {{ user.lastName }}
+      </p>
+
+      <p>
+        <strong>E-mail:</strong>
+        {{ user.email }}
+      </p>
+
+      <p>
+        <strong>Rola:</strong>
+        {{ user.role }}
+      </p>
+    </div>
+
+    <div class="summary-card">
+      <h2>Najbliższe spotkanie</h2>
+
+      <ng-container *ngIf="meetings.length > 0; else noUpcomingMeeting">
+        <p>
+          <strong>Tytuł:</strong>
+          {{ meetings[0].title }}
+        </p>
+
+        <p>
+          <strong>Typ:</strong>
+          {{ meetings[0].meetingType }}
+        </p>
+
+        <p>
+          <strong>Termin:</strong>
+          {{ formatDate(meetings[0].startDate) }}
+        </p>
+
+        <p>
+          <strong>Status:</strong>
+          {{ meetings[0].status }}
+        </p>
+
+        <button type="button" (click)="showDetails(meetings[0])">
+          Pokaż szczegóły
+        </button>
+      </ng-container>
+
+      <ng-template #noUpcomingMeeting>
+        <p>Brak przypisanych spotkań.</p>
+      </ng-template>
+    </div>
+  </section>
+
+  <section class="details-card" *ngIf="selectedMeeting">
+    <div class="details-header">
+      <div>
+        <h2>Szczegóły spotkania</h2>
+        <p>Podgląd i obsługa wybranego spotkania.</p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="closeDetails()">
+        Zamknij
+      </button>
+    </div>
+
+    <div class="details-grid">
+      <div class="details-item">
+        <strong>Tytuł</strong>
+        <span>{{ selectedMeeting.title }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Typ</strong>
+        <span>{{ selectedMeeting.meetingType }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Status</strong>
+
+        <select
+          [ngModel]="selectedMeeting.status"
+          (ngModelChange)="changeStatus($event)"
+        >
+          <option *ngFor="let status of statuses" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+
+      <div class="details-item">
+        <strong>Rozpoczęcie</strong>
+        <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Zakończenie</strong>
+        <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+      </div>
+
+      <div class="details-item full-width">
+        <strong>Opis</strong>
+        <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+      </div>
+    </div>
+
+    <div class="details-extra-grid">
+      <div class="notes-section">
+        <div class="section-header">
+          <h3>Notatki po spotkaniu</h3>
+          <p>Dodaj informacje po spotkaniu lub oględzinach.</p>
+        </div>
+
+        <div class="note-form">
+          <label for="agentNoteContent">Treść notatki</label>
+
+          <textarea
+            id="agentNoteContent"
+            name="agentNoteContent"
+            rows="4"
+            [(ngModel)]="noteContent"
+            placeholder="Wpisz notatkę po spotkaniu..."
+          ></textarea>
+
+          <div class="actions-row">
+            <button type="button" (click)="saveNote()">
+              {{ editNoteMode ? 'Zapisz zmianę' : 'Dodaj notatkę' }}
+            </button>
+
+            <button
+              type="button"
+              class="secondary-button"
+              *ngIf="editNoteMode"
+              (click)="clearNoteForm()"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+
+        <div class="items-list" *ngIf="meetingNotes.length > 0">
+          <div class="note-card" *ngFor="let note of meetingNotes">
+            <p>{{ note.content }}</p>
+
+            <div class="meta">
+              Dodano: {{ formatDateTime(note.createdAt) }}
+            </div>
+
+            <div class="actions-row">
+              <button type="button" (click)="editNote(note)">
+                Edytuj
+              </button>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteNote(note)"
+              >
+                Usuń
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="empty-message" *ngIf="meetingNotes.length === 0">
+          Brak notatek dla tego spotkania.
+        </p>
+      </div>
+
+      <div class="attachments-section">
+        <div class="section-header">
+          <h3>Załączniki</h3>
+          <p>Dodaj PDF lub zdjęcie jako potwierdzenie.</p>
+        </div>
+
+        <div class="attachment-form">
+          <label for="agentAttachmentFile">Wybierz plik</label>
+
+          <input
+            id="agentAttachmentFile"
+            name="agentAttachmentFile"
+            type="file"
+            accept=".pdf,image/jpeg,image/png,image/webp"
+            (change)="onFileSelected($event)"
+          />
+
+          <p class="selected-file" *ngIf="selectedFile">
+            Wybrany plik: {{ selectedFile.name }}
+          </p>
+
+          <button type="button" (click)="uploadAttachment()">
+            Dodaj załącznik
+          </button>
+        </div>
+
+        <div class="items-list" *ngIf="meetingAttachments.length > 0">
+          <div
+            class="attachment-card"
+            *ngFor="let attachment of meetingAttachments"
+          >
+            <div>
+              <strong>{{ attachment.originalName }}</strong>
+
+              <p>
+                Typ: {{ attachment.mimeType }}<br />
+                Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+              </p>
+            </div>
+
+            <div class="actions-row">
+              <a
+                [href]="getAttachmentUrl(attachment)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="open-link"
+              >
+                Otwórz
+              </a>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteAttachment(attachment)"
+              >
+                Usuń
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="empty-message" *ngIf="meetingAttachments.length === 0">
+          Brak załączników dla tego spotkania.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="meetings-table">
+    <div class="table-header">
+      <div>
+        <h2>Lista przypisanych spotkań</h2>
+        <p>Liczba spotkań: {{ meetings.length }}</p>
+      </div>
+    </div>
+
+    <table *ngIf="meetings.length > 0">
+      <thead>
+        <tr>
+          <th>Tytuł</th>
+          <th>Typ</th>
+          <th>Termin</th>
+          <th>Status</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let meeting of meetings">
+          <td>{{ meeting.title }}</td>
+          <td>{{ meeting.meetingType }}</td>
+          <td>
+            {{ formatDate(meeting.startDate) }}
+            <br />
+            do {{ formatDate(meeting.endDate) }}
+          </td>
+          <td>{{ meeting.status }}</td>
+          <td>
+            <button type="button" (click)="showDetails(meeting)">
+              Szczegóły
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="empty-message" *ngIf="meetings.length === 0">
+      Nie masz jeszcze przypisanych spotkań.
+    </p>
+  </section>
 </div>

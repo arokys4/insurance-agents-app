@@ -1,0 +1,166 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Mój kalendarz</h1>
+      <p *ngIf="user">
+        Harmonogram spotkań agenta: {{ user.firstName }} {{ user.lastName }}
+      </p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
+    </button>
+  </header>
+
+  <section class="calendar-toolbar">
+    <button type="button" (click)="previousWeek()">‹ Poprzedni tydzień</button>
+
+    <div class="week-title">
+      <h2>{{ getWeekLabel() }}</h2>
+      <p>Liczba moich spotkań: {{ meetings.length }}</p>
+    </div>
+
+    <button type="button" (click)="nextWeek()">Następny tydzień ›</button>
+    <button type="button" class="today-button" (click)="goToToday()">Dzisiaj</button>
+  </section>
+
+  <section class="calendar">
+    <div class="calendar-header">
+      <div class="time-header"></div>
+
+      <div
+        class="day-header"
+        *ngFor="let day of weekDays"
+        [class.today-header]="isToday(day)"
+      >
+        <span class="day-name">{{ day.dayName }}</span>
+        <span class="day-number">{{ day.dayNumber }}</span>
+      </div>
+    </div>
+
+    <div class="calendar-body">
+      <div class="calendar-row" *ngFor="let hour of hours">
+        <div class="time-cell">
+          {{ hour }}
+        </div>
+
+        <div class="day-cell" *ngFor="let day of weekDays">
+          <div
+            class="meeting-block"
+            *ngFor="let meeting of getMeetingsForDayAndHour(day, hour)"
+            [class]="getStatusClass(meeting.status)"
+            (click)="showMeetingDetails(meeting)"
+          >
+            <div class="meeting-time">
+              {{ formatMeetingTime(meeting) }}
+            </div>
+
+            <div class="meeting-title">
+              {{ meeting.title }}
+            </div>
+
+            <div class="meeting-status">
+              {{ meeting.status }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="empty-card" *ngIf="meetings.length === 0">
+    <h2>Brak spotkań</h2>
+    <p>Nie masz jeszcze przypisanych spotkań w systemie.</p>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="selectedMeeting">
+    <div class="meeting-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Szczegóły spotkania</h2>
+          <p>Podgląd spotkania z Twojego kalendarza.</p>
+        </div>
+      </div>
+
+      <div class="modal-content">
+        <div class="detail-item">
+          <strong>Tytuł</strong>
+          <span>{{ selectedMeeting.title }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Typ spotkania</strong>
+          <span>{{ selectedMeeting.meetingType }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Status</strong>
+          <span>{{ selectedMeeting.status }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Rozpoczęcie</strong>
+          <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Zakończenie</strong>
+          <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+        </div>
+
+        <div class="detail-item full-width">
+          <strong>Opis</strong>
+          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+        </div>
+      </div>
+
+      <div class="modal-extra-grid">
+        <div class="modal-notes-section">
+          <h3>Notatki po spotkaniu</h3>
+
+          <div class="modal-note-card" *ngFor="let note of meetingNotes">
+            <p>{{ note.content }}</p>
+            <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
+          </div>
+
+          <p class="modal-empty-message" *ngIf="meetingNotes.length === 0">
+            Brak notatek dla tego spotkania.
+          </p>
+        </div>
+
+        <div class="modal-attachments-section">
+          <h3>Załączniki</h3>
+
+          <div class="modal-attachment-card" *ngFor="let attachment of meetingAttachments">
+            <div>
+              <strong>{{ attachment.originalName }}</strong>
+              <p>
+                Typ: {{ attachment.mimeType }}<br />
+                Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+              </p>
+            </div>
+
+            <a
+              [href]="getAttachmentUrl(attachment)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="open-link"
+            >
+              Otwórz
+            </a>
+          </div>
+
+          <p class="modal-empty-message" *ngIf="meetingAttachments.length === 0">
+            Brak załączników dla tego spotkania.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button" (click)="closeMeetingDetails()">
+          Zamknij
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
