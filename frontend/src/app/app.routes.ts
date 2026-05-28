@@ -7,6 +7,7 @@ import { AdminAgents } from './pages/admin-agents/admin-agents';
 import { AdminMeetings } from './pages/admin-meetings/admin-meetings';
 import { AdminCalendar } from './pages/admin-calendar/admin-calendar';
 import { AdminWorkTime } from './pages/admin-work-time/admin-work-time';
+import { ChangePassword } from './pages/change-password/change-password';
 
 
 export const routes: Routes = [
@@ -18,6 +19,10 @@ export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'change-password',
+    component: ChangePassword
   },
   {
     path: 'admin',
@@ -52,5 +57,6 @@ export const routes: Routes = [
   {
     path: '**',
     redirectTo: 'login'
-  }
+  },
+
 ];

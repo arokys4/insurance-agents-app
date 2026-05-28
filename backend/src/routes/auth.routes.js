@@ -1,0 +1,138 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+
+function authRouter(db) {
+  const router = express.Router();
+
+  router.post('/login', async (req, res) => {
+    try {
+      const email = (req.body.email || '').trim().toLowerCase();
+      const password = req.body.password || '';
+
+      if (!email || !password) {
+        return res.status(400).json({
+          error: 'Podaj adres e-mail i hasło.'
+        });
+      }
+
+      const user = await db.get(
+        `
+        SELECT
+          id,
+          first_name AS firstName,
+          last_name AS lastName,
+          email,
+          password,
+          role,
+          must_change_password AS mustChangePassword,
+          status
+        FROM agents
+        WHERE email = ?
+        `,
+        [email]
+      );
+
+      if (!user) {
+        return res.status(401).json({
+          error: 'Nieprawidłowy adres e-mail lub hasło.'
+        });
+      }
+
+      if (user.status !== 'Aktywny') {
+        return res.status(403).json({
+          error: 'Konto użytkownika jest nieaktywne.'
+        });
+      }
+
+      if (!user.password) {
+        return res.status(401).json({
+          error: 'Konto nie posiada ustawionego hasła.'
+        });
+      }
+
+      const passwordMatches = await bcrypt.compare(password, user.password);
+
+      if (!passwordMatches) {
+        return res.status(401).json({
+          error: 'Nieprawidłowy adres e-mail lub hasło.'
+        });
+      }
+
+      res.json({
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          mustChangePassword: Boolean(user.mustChangePassword)
+        }
+      });
+    } catch (error) {
+      console.error('Błąd logowania:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się zalogować użytkownika.'
+      });
+    }
+  });
+
+    router.patch('/change-password', async (req, res) => {
+        try {
+        const userId = Number(req.body.userId);
+        const newPassword = req.body.newPassword || '';
+
+        if (!userId || !newPassword) {
+            return res.status(400).json({
+            error: 'Podaj identyfikator użytkownika i nowe hasło.'
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+            error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
+            });
+        }
+
+        const user = await db.get(
+            `
+            SELECT id
+            FROM agents
+            WHERE id = ?
+            `,
+            [userId]
+        );
+
+        if (!user) {
+            return res.status(404).json({
+            error: 'Nie znaleziono użytkownika.'
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await db.run(
+            `
+            UPDATE agents
+            SET password = ?, must_change_password = 0
+            WHERE id = ?
+            `,
+            [hashedPassword, userId]
+        );
+
+        res.json({
+            message: 'Hasło zostało zmienione.'
+        });
+        } catch (error) {
+        console.error('Błąd zmiany hasła:', error);
+
+        res.status(500).json({
+            error: 'Nie udało się zmienić hasła.'
+        });
+        }
+    });
+
+  return router;
+}
+
+module.exports = authRouter;

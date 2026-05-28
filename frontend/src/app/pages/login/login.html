@@ -1,38 +1,41 @@
 <div class="login-page">
   <div class="login-card">
-    <h1>Logowanie</h1>
-    <p>System zarządzania agentami ubezpieczeniowymi</p>
+    <h1>System nadzoru agentów</h1>
+    <p>Zaloguj się do aplikacji.</p>
 
     <form (ngSubmit)="login()">
-      <label for="email">Adres e-mail</label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        [(ngModel)]="email"
-        placeholder="np. admin@firma.pl"
-      />
+      <div class="form-field">
+        <label for="email">Adres e-mail</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          [(ngModel)]="email"
+          placeholder="np. admin@firma.pl"
+        />
+      </div>
 
-      <label for="password">Hasło</label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        [(ngModel)]="password"
-        placeholder="Wpisz hasło"
-      />
+      <div class="form-field">
+        <label for="password">Hasło</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          placeholder="Wpisz hasło"
+        />
+      </div>
 
-      <button type="submit">Zaloguj</button>
-
-      <p class="error" *ngIf="errorMessage">
+      <p class="error-message" *ngIf="errorMessage">
         {{ errorMessage }}
       </p>
+
+      <button type="submit">Zaloguj</button>
     </form>
 
-    <div class="test-users">
-      <strong>Dane testowe:</strong>
-      <p>Admin: admin@firma.pl / admin123</p>
-      <p>Agent: agent@firma.pl / agent123</p>
+    <div class="login-info">
+      <p><strong>Konto administratora:</strong></p>
+      <p>admin@firma.pl / admin123</p>
     </div>
   </div>
 </div>

@@ -4,6 +4,7 @@ const path = require('path');
 
 const { openDatabase } = require('./db/database');
 
+const authRouter = require('./routes/auth.routes');
 const agentsRouter = require('./routes/agents.routes');
 const meetingsRouter = require('./routes/meetings.routes');
 const workTimeRouter = require('./routes/work-time.routes');
@@ -27,6 +28,7 @@ async function startServer() {
     });
   });
 
+  app.use('/api/auth', authRouter(db));
   app.use('/api/agents', agentsRouter(db));
   app.use('/api/meetings', meetingsRouter(db));
   app.use('/api/work-time', workTimeRouter(db));

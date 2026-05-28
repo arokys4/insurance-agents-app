@@ -11,6 +11,9 @@ interface Agent {
   email: string;
   phone: string;
   status: string;
+  role?: string;
+  mustChangePassword?: boolean;
+  password?: string;
 }
 
 @Component({
@@ -35,7 +38,8 @@ export class AdminAgents implements OnInit {
     lastName: '',
     email: '',
     phone: '',
-    status: 'Aktywny'
+    status: 'Aktywny',
+    password: ''
   };
 
   constructor(
@@ -133,6 +137,16 @@ validateAgentForm(): boolean {
     return false;
   }
 
+  if (!this.editMode && (!this.agentForm.password || this.agentForm.password.length < 6)) {
+    alert('Hasło startowe musi mieć co najmniej 6 znaków.');
+    return false;
+  }
+
+  if (this.editMode && this.agentForm.password && this.agentForm.password.length < 6) {
+    alert('Nowe hasło musi mieć co najmniej 6 znaków.');
+    return false;
+  }
+
   if (!this.isOnlyLetters(this.agentForm.firstName)) {
     alert('Imię może zawierać tylko litery.');
     return false;
@@ -196,7 +210,8 @@ validateAgentForm(): boolean {
       lastName: agent.lastName,
       email: agent.email,
       phone: agent.phone,
-      status: agent.status
+      status: agent.status,
+      password: ''
     };
 
     this.editMode = true;
@@ -292,7 +307,8 @@ validateAgentForm(): boolean {
       lastName: '',
       email: '',
       phone: '',
-      status: 'Aktywny'
+      status: 'Aktywny',
+      password: ''
     };
   }
 

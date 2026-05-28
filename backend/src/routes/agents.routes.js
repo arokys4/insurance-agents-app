@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 
 function formatName(value) {
   const trimmedValue = value.trim().toLocaleLowerCase('pl-PL');
@@ -23,12 +24,13 @@ function isValidEmail(value) {
   return emailRegex.test(value);
 }
 
-function validateAgentData(data) {
+function validateAgentData(data, requirePassword = false) {
   const firstName = formatName(data.firstName || '');
   const lastName = formatName(data.lastName || '');
   const email = (data.email || '').trim().toLowerCase();
   const phone = (data.phone || '').replace(/\D/g, '').slice(0, 9);
   const status = data.status || 'Aktywny';
+  const password = data.password || '';
 
   if (!firstName || !lastName || !email || !phone) {
     return {
@@ -72,6 +74,20 @@ function validateAgentData(data) {
     };
   }
 
+  if (requirePassword && password.length < 6) {
+    return {
+      valid: false,
+      error: 'Hasło startowe musi mieć co najmniej 6 znaków.'
+    };
+  }
+
+  if (!requirePassword && password && password.length < 6) {
+    return {
+      valid: false,
+      error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
+    };
+  }
+
   return {
     valid: true,
     agent: {
@@ -79,7 +95,8 @@ function validateAgentData(data) {
       lastName,
       email,
       phone,
-      status
+      status,
+      password
     }
   };
 }
@@ -96,7 +113,9 @@ function agentsRouter(db) {
           last_name AS lastName,
           email,
           phone,
-          status
+          status,
+          role,
+          must_change_password AS mustChangePassword
         FROM agents
         ORDER BY id DESC
       `);
@@ -113,7 +132,7 @@ function agentsRouter(db) {
 
   router.post('/', async (req, res) => {
     try {
-      const validation = validateAgentData(req.body);
+      const validation = validateAgentData(req.body, true);
 
       if (!validation.valid) {
         return res.status(400).json({
@@ -121,14 +140,33 @@ function agentsRouter(db) {
         });
       }
 
-      const { firstName, lastName, email, phone, status } = validation.agent;
+      const { firstName, lastName, email, phone, status, password } = validation.agent;
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       const result = await db.run(
         `
-        INSERT INTO agents (first_name, last_name, email, phone, status)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO agents (
+          first_name,
+          last_name,
+          email,
+          phone,
+          status,
+          password,
+          role,
+          must_change_password
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `,
-        [firstName, lastName, email, phone, status]
+        [
+          firstName,
+          lastName,
+          email,
+          phone,
+          status,
+          hashedPassword,
+          'AGENT',
+          1
+        ]
       );
 
       const createdAgent = await db.get(
@@ -139,7 +177,9 @@ function agentsRouter(db) {
           last_name AS lastName,
           email,
           phone,
-          status
+          status,
+          role,
+          must_change_password AS mustChangePassword
         FROM agents
         WHERE id = ?
         `,
@@ -166,7 +206,7 @@ function agentsRouter(db) {
     try {
       const { id } = req.params;
 
-      const validation = validateAgentData(req.body);
+      const validation = validateAgentData(req.body, false);
 
       if (!validation.valid) {
         return res.status(400).json({
@@ -174,11 +214,11 @@ function agentsRouter(db) {
         });
       }
 
-      const { firstName, lastName, email, phone, status } = validation.agent;
+      const { firstName, lastName, email, phone, status, password } = validation.agent;
 
       const existingAgent = await db.get(
         `
-        SELECT id
+        SELECT id, role
         FROM agents
         WHERE id = ?
         `,
@@ -191,14 +231,48 @@ function agentsRouter(db) {
         });
       }
 
-      await db.run(
-        `
-        UPDATE agents
-        SET first_name = ?, last_name = ?, email = ?, phone = ?, status = ?
-        WHERE id = ?
-        `,
-        [firstName, lastName, email, phone, status, id]
-      );
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await db.run(
+          `
+          UPDATE agents
+          SET
+            first_name = ?,
+            last_name = ?,
+            email = ?,
+            phone = ?,
+            status = ?,
+            password = ?,
+            must_change_password = ?
+          WHERE id = ?
+          `,
+          [
+            firstName,
+            lastName,
+            email,
+            phone,
+            status,
+            hashedPassword,
+            1,
+            id
+          ]
+        );
+      } else {
+        await db.run(
+          `
+          UPDATE agents
+          SET
+            first_name = ?,
+            last_name = ?,
+            email = ?,
+            phone = ?,
+            status = ?
+          WHERE id = ?
+          `,
+          [firstName, lastName, email, phone, status, id]
+        );
+      }
 
       const updatedAgent = await db.get(
         `
@@ -208,7 +282,9 @@ function agentsRouter(db) {
           last_name AS lastName,
           email,
           phone,
-          status
+          status,
+          role,
+          must_change_password AS mustChangePassword
         FROM agents
         WHERE id = ?
         `,
@@ -274,7 +350,9 @@ function agentsRouter(db) {
           last_name AS lastName,
           email,
           phone,
-          status
+          status,
+          role,
+          must_change_password AS mustChangePassword
         FROM agents
         WHERE id = ?
         `,
@@ -297,7 +375,7 @@ function agentsRouter(db) {
 
       const agent = await db.get(
         `
-        SELECT id
+        SELECT id, role
         FROM agents
         WHERE id = ?
         `,
@@ -307,6 +385,12 @@ function agentsRouter(db) {
       if (!agent) {
         return res.status(404).json({
           error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      if (agent.role === 'ADMIN') {
+        return res.status(403).json({
+          error: 'Nie można usunąć konta administratora.'
         });
       }
 

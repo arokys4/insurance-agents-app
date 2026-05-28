@@ -119,6 +119,20 @@
         </div>
       </div>
 
+      <div class="form-field">
+        <label for="password">
+          {{ editMode ? 'Nowe hasło startowe' : 'Hasło startowe' }}
+        </label>
+
+        <input
+          id="password"
+          name="password"
+          type="password"
+          [(ngModel)]="agentForm.password"
+          [placeholder]="editMode ? 'Zostaw puste, jeśli nie zmieniasz hasła' : 'Minimum 6 znaków'"
+        />
+      </div>
+
       <div class="form-actions">
         <button type="submit">
           {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
