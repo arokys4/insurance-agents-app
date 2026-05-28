@@ -55,7 +55,7 @@ button:hover {
   background: #23272b;
 }
 
-/* Formularz dodawania/edycji spotkania */
+/* Formularz dodawania i edycji spotkania */
 
 .form-card {
   background: white;
@@ -167,46 +167,65 @@ td select {
   line-height: 1.4;
 }
 
-/* Notatki po spotkaniu */
+/* Układ notatek i załączników obok siebie */
 
-.notes-section {
+.details-extra-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid #e0e4ea;
 }
 
-.notes-header {
-  margin-bottom: 18px;
+.notes-section,
+.attachments-section {
+  background: #f8fbf9;
+  border: 1px solid #d9e8df;
+  border-radius: 10px;
+  padding: 20px;
 }
 
-.notes-header h3 {
+.notes-header,
+.attachments-header {
+  margin-bottom: 16px;
+}
+
+.notes-header h3,
+.attachments-header h3 {
   margin: 0 0 6px 0;
   color: #198754;
 }
 
-.notes-header p {
+.notes-header p,
+.attachments-header p {
   margin: 0;
   color: #555;
+  font-size: 14px;
 }
 
-.note-form {
-  background: #f8fbf9;
+/* Formularz notatki i formularz załącznika */
+
+.note-form,
+.attachment-form {
+  background: white;
   border-radius: 8px;
-  padding: 18px;
+  padding: 16px;
   border: 1px solid #d9e8df;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.note-form label {
+.note-form label,
+.attachment-form label {
   font-weight: bold;
   color: #198754;
 }
 
 .note-form textarea {
   width: 100%;
-  min-height: 110px;
+  min-height: 105px;
   padding: 12px;
   border: 1px solid #ccd2da;
   border-radius: 6px;
@@ -215,29 +234,48 @@ td select {
   box-sizing: border-box;
 }
 
-.note-actions {
+.attachment-form input {
+  padding: 10px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+  background: white;
+}
+
+.selected-file {
+  margin: 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.note-actions,
+.note-buttons,
+.attachment-actions {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  flex-wrap: wrap;
 }
 
-.notes-list {
-  margin-top: 22px;
+/* Lista notatek i załączników */
+
+.notes-list,
+.attachments-list {
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
-.note-card {
+.note-card,
+.attachment-card {
   background: white;
   border: 1px solid #d9e8df;
   border-left: 5px solid #198754;
   border-radius: 8px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .note-content {
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   color: #222;
   line-height: 1.5;
 }
@@ -245,15 +283,41 @@ td select {
 .note-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px;
   color: #666;
   font-size: 13px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.note-buttons {
+.attachment-card {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.attachment-card strong {
+  color: #222;
+}
+
+.attachment-card p {
+  margin: 6px 0 0 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.open-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: #198754;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.open-link:hover {
+  background: #146c43;
 }
 
 /* Tabela spotkań */
@@ -294,7 +358,17 @@ td {
 
 /* Responsywność */
 
+@media (max-width: 1100px) {
+  .details-extra-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
+  .page {
+    padding: 24px;
+  }
+
   .header {
     flex-direction: column;
     align-items: flex-start;
@@ -310,6 +384,10 @@ td {
     grid-column: 1;
   }
 
+  .attachment-card {
+    flex-direction: column;
+  }
+
   table {
     font-size: 13px;
   }
@@ -317,96 +395,4 @@ td {
   button {
     margin-bottom: 6px;
   }
-}
-
-.attachments-section {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #e0e4ea;
-}
-
-.attachments-header {
-  margin-bottom: 18px;
-}
-
-.attachments-header h3 {
-  margin: 0 0 6px 0;
-  color: #198754;
-}
-
-.attachments-header p {
-  margin: 0;
-  color: #555;
-}
-
-.attachment-form {
-  background: #f8fbf9;
-  border-radius: 8px;
-  padding: 18px;
-  border: 1px solid #d9e8df;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.attachment-form label {
-  font-weight: bold;
-  color: #198754;
-}
-
-.attachment-form input {
-  padding: 10px;
-  border: 1px solid #ccd2da;
-  border-radius: 6px;
-  background: white;
-}
-
-.selected-file {
-  margin: 0;
-  color: #555;
-}
-
-.attachments-list {
-  margin-top: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.attachment-card {
-  background: white;
-  border: 1px solid #d9e8df;
-  border-left: 5px solid #198754;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-}
-
-.attachment-card p {
-  margin: 6px 0 0 0;
-  color: #666;
-  font-size: 13px;
-}
-
-.attachment-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.open-link {
-  display: inline-block;
-  padding: 10px 16px;
-  border-radius: 6px;
-  background: #198754;
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.open-link:hover {
-  background: #146c43;
 }

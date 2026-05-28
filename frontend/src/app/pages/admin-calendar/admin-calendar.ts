@@ -22,6 +22,24 @@ interface CalendarDay {
   dayNumber: number;
 }
 
+interface MeetingNote {
+  id?: number;
+  meetingId: number;
+  content: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface MeetingAttachment {
+  id?: number;
+  meetingId: number;
+  originalName: string;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  uploadedAt?: string;
+}
+
 @Component({
   selector: 'app-admin-calendar',
   imports: [NgFor, NgIf],
@@ -30,11 +48,16 @@ interface CalendarDay {
 })
 export class AdminCalendar implements OnInit {
   private meetingsApiUrl = 'http://localhost:4000/api/meetings';
+  private notesApiUrl = 'http://localhost:4000/api/meeting-notes';
+  private attachmentsApiUrl = 'http://localhost:4000/api/meeting-attachments';
+  private backendUrl = 'http://localhost:4000'
 
   meetings: Meeting[] = [];
   weekDays: CalendarDay[] = [];
 
   selectedMeeting: Meeting | null = null;
+  meetingNotes: MeetingNote[] = [];
+  meetingAttachments: MeetingAttachment[] = [];
 
   currentWeekStart = this.getStartOfWeek(new Date());
 
@@ -203,10 +226,55 @@ export class AdminCalendar implements OnInit {
 
   showMeetingDetails(meeting: Meeting): void {
     this.selectedMeeting = meeting;
+    this.meetingNotes = [];
+    this.meetingAttachments = [];
+
+    if (meeting.id) {
+      this.loadMeetingNotes(meeting.id);
+      this.loadMeetingAttachments(meeting.id);
+    }
   }
 
   closeMeetingDetails(): void {
     this.selectedMeeting = null;
+    this.meetingNotes = [];
+    this.meetingAttachments = [];
+  }
+
+    loadMeetingNotes(meetingId: number): void {
+    this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
+      next: (notes) => {
+        this.meetingNotes = notes;
+      },
+      error: (error) => {
+        console.error('Błąd pobierania notatek spotkania:', error);
+        this.meetingNotes = [];
+      }
+    });
+  }
+
+  loadMeetingAttachments(meetingId: number): void {
+    this.http.get<MeetingAttachment[]>(`${this.attachmentsApiUrl}/meeting/${meetingId}`).subscribe({
+      next: (attachments) => {
+        this.meetingAttachments = attachments;
+      },
+      error: (error) => {
+        console.error('Błąd pobierania załączników spotkania:', error);
+        this.meetingAttachments = [];
+      }
+    });
+  }
+
+  getAttachmentUrl(attachment: MeetingAttachment): string {
+    return `${this.backendUrl}${attachment.filePath}`;
+  }
+
+  formatDateTime(value?: string): string {
+    if (!value) {
+      return '-';
+    }
+
+    return new Date(value).toLocaleString('pl-PL');
   }
 
   goBack(): void {

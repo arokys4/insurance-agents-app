@@ -125,6 +125,51 @@
         </div>
       </div>
 
+      <div class="modal-extra-grid">
+        <div class="modal-notes-section">
+          <h3>Notatki po spotkaniu</h3>
+
+          <div class="modal-note-card" *ngFor="let note of meetingNotes">
+            <p>{{ note.content }}</p>
+
+            <span>
+              Dodano: {{ formatDateTime(note.createdAt) }}
+            </span>
+          </div>
+
+          <p class="modal-empty-message" *ngIf="meetingNotes.length === 0">
+            Brak notatek dla tego spotkania.
+          </p>
+        </div>
+
+        <div class="modal-attachments-section">
+          <h3>Załączniki</h3>
+
+          <div class="modal-attachment-card" *ngFor="let attachment of meetingAttachments">
+            <div>
+              <strong>{{ attachment.originalName }}</strong>
+              <p>
+                Typ: {{ attachment.mimeType }}<br />
+                Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+              </p>
+            </div>
+
+            <a
+              [href]="getAttachmentUrl(attachment)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="open-link"
+            >
+              Otwórz
+            </a>
+          </div>
+
+          <p class="modal-empty-message" *ngIf="meetingAttachments.length === 0">
+            Brak załączników dla tego spotkania.
+          </p>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button type="button" (click)="goToMeetings()">
           Przejdź do modułu spotkań

@@ -337,3 +337,93 @@ button:hover {
   gap: 8px;
   margin-top: 24px;
 }
+
+.modal-extra-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e4ea;
+}
+
+.modal-notes-section,
+.modal-attachments-section {
+  background: #f8fbf9;
+  border: 1px solid #d9e8df;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.modal-notes-section h3,
+.modal-attachments-section h3 {
+  margin: 0 0 12px 0;
+  color: #198754;
+}
+
+.modal-note-card,
+.modal-attachment-card {
+  background: white;
+  border: 1px solid #d9e8df;
+  border-left: 4px solid #198754;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.modal-note-card p {
+  margin: 0 0 8px 0;
+  color: #222;
+  line-height: 1.4;
+}
+
+.modal-note-card span {
+  color: #666;
+  font-size: 13px;
+}
+
+.modal-attachment-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.modal-attachment-card strong {
+  color: #222;
+}
+
+.modal-attachment-card p {
+  margin: 6px 0 0 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.modal-empty-message {
+  margin: 0;
+  color: #555;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.open-link {
+  display: inline-block;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background: #198754;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.open-link:hover {
+  background: #146c43;
+}
+
+@media (max-width: 900px) {
+  .modal-extra-grid {
+    grid-template-columns: 1fr;
+  }
+}

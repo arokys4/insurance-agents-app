@@ -12,7 +12,7 @@
     <button type="button" (click)="showAddMeetingForm()">Dodaj spotkanie</button>
   </section>
 
-    <section class="details-card" *ngIf="selectedMeeting">
+  <section class="details-card" *ngIf="selectedMeeting">
     <div class="details-header">
       <div>
         <h2>Szczegóły spotkania</h2>
@@ -63,234 +63,238 @@
       </div>
     </div>
 
-    <div class="notes-section">
-      <div class="notes-header">
-        <div>
-          <h3>Notatki po spotkaniu</h3>
-          <p>W tym miejscu można zapisać ustalenia, przebieg spotkania lub informacje po oględzinach.</p>
-        </div>
-      </div>
-
-      <div class="note-form">
-        <label for="noteContent">Treść notatki</label>
-
-        <textarea
-          id="noteContent"
-          name="noteContent"
-          rows="4"
-          [(ngModel)]="noteContent"
-          placeholder="Wpisz notatkę po spotkaniu, np. ustalenia z klientem, wynik oględzin lub dodatkowe informacje."
-        ></textarea>
-
-        <div class="note-actions">
-          <button type="button" (click)="saveNote()">
-            {{ editNoteMode ? 'Zapisz zmianę notatki' : 'Dodaj notatkę' }}
-          </button>
-
-          <button
-            type="button"
-            class="secondary-button"
-            *ngIf="editNoteMode"
-            (click)="clearNoteForm()"
-          >
-            Anuluj edycję
-          </button>
-        </div>
-      </div>
-
-      <div class="notes-list" *ngIf="meetingNotes.length > 0">
-        <div class="note-card" *ngFor="let note of meetingNotes">
-          <p class="note-content">{{ note.content }}</p>
-
-          <div class="note-meta">
-            <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
-            <span *ngIf="note.updatedAt">Edytowano: {{ formatDateTime(note.updatedAt) }}</span>
-          </div>
-
-          <div class="note-buttons">
-            <button type="button" (click)="editNote(note)">Edytuj</button>
-
-            <button
-              type="button"
-              class="delete-button"
-              (click)="deleteNote(note)"
-            >
-              Usuń
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <p class="empty-message" *ngIf="meetingNotes.length === 0">
-        Brak notatek dla tego spotkania.
-      </p>
-    </div>
-    
-    <div class="attachments-section">
-      <div class="attachments-header">
-        <div>
-          <h3>Załączniki do spotkania</h3>
-          <p>Dodaj dokument PDF lub zdjęcie jako potwierdzenie spotkania albo oględzin.</p>
-        </div>
-      </div>
-
-      <div class="attachment-form">
-        <label for="attachmentFile">Wybierz plik</label>
-
-        <input
-          id="attachmentFile"
-          name="attachmentFile"
-          type="file"
-          accept=".pdf,image/jpeg,image/png,image/webp"
-          (change)="onFileSelected($event)"
-        />
-
-        <p class="selected-file" *ngIf="selectedFile">
-          Wybrany plik: {{ selectedFile.name }}
-        </p>
-
-        <button type="button" (click)="uploadAttachment()">
-          Dodaj załącznik
-        </button>
-      </div>
-
-      <div class="attachments-list" *ngIf="meetingAttachments.length > 0">
-        <div class="attachment-card" *ngFor="let attachment of meetingAttachments">
+    <div class="details-extra-grid">
+      <div class="notes-section">
+        <div class="notes-header">
           <div>
-            <strong>{{ attachment.originalName }}</strong>
-            <p>
-              Typ: {{ attachment.mimeType }} |
-              Dodano: {{ formatDateTime(attachment.uploadedAt) }}
-            </p>
+            <h3>Notatki po spotkaniu</h3>
+            <p>Zapisz ustalenia, przebieg spotkania lub informacje po oględzinach.</p>
           </div>
+        </div>
 
-          <div class="attachment-actions">
-            <a
-              [href]="getAttachmentUrl(attachment)"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="open-link"
-            >
-              Otwórz
-            </a>
+        <div class="note-form">
+          <label for="noteContent">Treść notatki</label>
+
+          <textarea
+            id="noteContent"
+            name="noteContent"
+            rows="4"
+            [(ngModel)]="noteContent"
+            placeholder="Wpisz notatkę po spotkaniu..."
+          ></textarea>
+
+          <div class="note-actions">
+            <button type="button" (click)="saveNote()">
+              {{ editNoteMode ? 'Zapisz zmianę' : 'Dodaj notatkę' }}
+            </button>
 
             <button
               type="button"
-              class="delete-button"
-              (click)="deleteAttachment(attachment)"
+              class="secondary-button"
+              *ngIf="editNoteMode"
+              (click)="clearNoteForm()"
             >
-              Usuń
+              Anuluj
             </button>
           </div>
         </div>
+
+        <div class="notes-list" *ngIf="meetingNotes.length > 0">
+          <div class="note-card" *ngFor="let note of meetingNotes">
+            <p class="note-content">{{ note.content }}</p>
+
+            <div class="note-meta">
+              <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
+              <span *ngIf="note.updatedAt">
+                Edytowano: {{ formatDateTime(note.updatedAt) }}
+              </span>
+            </div>
+
+            <div class="note-buttons">
+              <button type="button" (click)="editNote(note)">Edytuj</button>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteNote(note)"
+              >
+                Usuń
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="empty-message" *ngIf="meetingNotes.length === 0">
+          Brak notatek dla tego spotkania.
+        </p>
       </div>
 
-      <p class="empty-message" *ngIf="meetingAttachments.length === 0">
-        Brak załączników dla tego spotkania.
-      </p>
+      <div class="attachments-section">
+        <div class="attachments-header">
+          <div>
+            <h3>Załączniki</h3>
+            <p>Dodaj PDF lub zdjęcie jako potwierdzenie spotkania.</p>
+          </div>
+        </div>
+
+        <div class="attachment-form">
+          <label for="attachmentFile">Wybierz plik</label>
+
+          <input
+            id="attachmentFile"
+            name="attachmentFile"
+            type="file"
+            accept=".pdf,image/jpeg,image/png,image/webp"
+            (change)="onFileSelected($event)"
+          />
+
+          <p class="selected-file" *ngIf="selectedFile">
+            Wybrany plik: {{ selectedFile.name }}
+          </p>
+
+          <button type="button" (click)="uploadAttachment()">
+            Dodaj załącznik
+          </button>
+        </div>
+
+        <div class="attachments-list" *ngIf="meetingAttachments.length > 0">
+          <div class="attachment-card" *ngFor="let attachment of meetingAttachments">
+            <div>
+              <strong>{{ attachment.originalName }}</strong>
+              <p>
+                Typ: {{ attachment.mimeType }}<br />
+                Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+              </p>
+            </div>
+
+            <div class="attachment-actions">
+              <a
+                [href]="getAttachmentUrl(attachment)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="open-link"
+              >
+                Otwórz
+              </a>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteAttachment(attachment)"
+              >
+                Usuń
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="empty-message" *ngIf="meetingAttachments.length === 0">
+          Brak załączników dla tego spotkania.
+        </p>
+      </div>
     </div>
   </section>
 
-    <section class="form-card" *ngIf="showForm">
-      <h2>{{ editMode ? 'Edycja spotkania' : 'Dodawanie nowego spotkania' }}</h2>
+  <section class="form-card" *ngIf="showForm">
+    <h2>{{ editMode ? 'Edycja spotkania' : 'Dodawanie nowego spotkania' }}</h2>
 
-      <form (ngSubmit)="saveMeeting()">
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="title">Tytuł spotkania</label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              [(ngModel)]="meetingForm.title"
-              placeholder="np. Spotkanie"
-            />
-          </div>
-
-          <div class="form-field">
-            <label for="meetingType">Typ spotkania</label>
-            <select
-              id="meetingType"
-              name="meetingType"
-              [(ngModel)]="meetingForm.meetingType"
-            >
-              <option *ngFor="let type of meetingTypes" [value]="type">
-                {{ type }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="startDate">Data rozpoczęcia</label>
-            <input
-              id="startDate"
-              name="startDate"
-              type="datetime-local"
-              [(ngModel)]="meetingForm.startDate"
-            />
-          </div>
-
-          <div class="form-field">
-            <label for="endDate">Data zakończenia</label>
-            <input
-              id="endDate"
-              name="endDate"
-              type="datetime-local"
-              [(ngModel)]="meetingForm.endDate"
-            />
-          </div>
-
-          <div class="form-field">
-            <label for="agentId">Przypisany agent</label>
-            <select
-              id="agentId"
-              name="agentId"
-              [(ngModel)]="meetingForm.agentId"
-            >
-              <option [ngValue]="null">Wybierz agenta</option>
-
-              <option *ngFor="let agent of agents" [ngValue]="agent.id">
-                {{ agent.firstName }} {{ agent.lastName }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="status">Status</label>
-            <select
-              id="status"
-              name="status"
-              [(ngModel)]="meetingForm.status"
-            >
-              <option *ngFor="let status of statuses" [value]="status">
-                {{ status }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-field full-width">
-            <label for="description">Opis</label>
-            <textarea
-              id="description"
-              name="description"
-              rows="4"
-              [(ngModel)]="meetingForm.description"
-              placeholder="Dodatkowe informacje dotyczące spotkania"
-            ></textarea>
-          </div>
+    <form (ngSubmit)="saveMeeting()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="title">Tytuł spotkania</label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            [(ngModel)]="meetingForm.title"
+            placeholder="np. Spotkanie z klientem"
+          />
         </div>
 
-        <div class="form-actions">
-          <button type="submit">
-            {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
-          </button>
-
-          <button type="button" class="secondary-button" (click)="cancel()">
-            Anuluj
-          </button>
+        <div class="form-field">
+          <label for="meetingType">Typ spotkania</label>
+          <select
+            id="meetingType"
+            name="meetingType"
+            [(ngModel)]="meetingForm.meetingType"
+          >
+            <option *ngFor="let type of meetingTypes" [value]="type">
+              {{ type }}
+            </option>
+          </select>
         </div>
-      </form>
-    </section>
+
+        <div class="form-field">
+          <label for="startDate">Data rozpoczęcia</label>
+          <input
+            id="startDate"
+            name="startDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.startDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="endDate">Data zakończenia</label>
+          <input
+            id="endDate"
+            name="endDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.endDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="agentId">Przypisany agent</label>
+          <select
+            id="agentId"
+            name="agentId"
+            [(ngModel)]="meetingForm.agentId"
+          >
+            <option [ngValue]="null">Wybierz agenta</option>
+
+            <option *ngFor="let agent of agents" [ngValue]="agent.id">
+              {{ agent.firstName }} {{ agent.lastName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="status">Status</label>
+          <select
+            id="status"
+            name="status"
+            [(ngModel)]="meetingForm.status"
+          >
+            <option *ngFor="let status of statuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Opis</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            [(ngModel)]="meetingForm.description"
+            placeholder="Dodatkowe informacje dotyczące spotkania"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancel()">
+          Anuluj
+        </button>
+      </div>
+    </form>
+  </section>
 
   <section class="meetings-table">
     <table>
