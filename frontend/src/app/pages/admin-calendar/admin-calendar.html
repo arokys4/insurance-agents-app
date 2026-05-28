@@ -48,6 +48,7 @@
             class="meeting-block"
             *ngFor="let meeting of getMeetingsForDayAndHour(day, hour)"
             [class]="getStatusClass(meeting.status)"
+            (click)="showMeetingDetails(meeting)"
           >
             <div class="meeting-time">
               {{ formatMeetingTime(meeting) }}
@@ -75,4 +76,64 @@
     <p>Dodaj spotkanie w module spotkań, aby pojawiło się w kalendarzu.</p>
     <button type="button" (click)="goToMeetings()">Przejdź do spotkań</button>
   </section>
+
+    <div class="modal-backdrop" *ngIf="selectedMeeting">
+    <div class="meeting-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Szczegóły spotkania</h2>
+          <p>Podgląd spotkania z kalendarza.</p>
+        </div>
+
+
+      </div>
+
+      <div class="modal-content">
+        <div class="detail-item">
+          <strong>Tytuł</strong>
+          <span>{{ selectedMeeting.title }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Typ spotkania</strong>
+          <span>{{ selectedMeeting.meetingType }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Agent</strong>
+          <span>{{ selectedMeeting.agentName }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Status</strong>
+          <span>{{ selectedMeeting.status }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Rozpoczęcie</strong>
+          <span>{{ formatMeetingTime(selectedMeeting).split(' - ')[0] }}</span>
+        </div>
+
+        <div class="detail-item">
+          <strong>Zakończenie</strong>
+          <span>{{ formatMeetingTime(selectedMeeting).split(' - ')[1] }}</span>
+        </div>
+
+        <div class="detail-item full-width">
+          <strong>Opis</strong>
+          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" (click)="goToMeetings()">
+          Przejdź do modułu spotkań
+        </button>
+
+        <button type="button" class="secondary-button" (click)="closeMeetingDetails()">
+          Zamknij
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

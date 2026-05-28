@@ -21,11 +21,11 @@ export class AdminDashboard {
   goToCalendar(): void {
     this.router.navigate(['/admin/calendar']);
   }
-  
+
   goToWorkTime(): void {
     this.router.navigate(['/admin/work-time']);
   }
-
+ 
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

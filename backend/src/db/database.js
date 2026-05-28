@@ -46,6 +46,16 @@ async function openDatabase() {
     );
   `);
   
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS meeting_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      meeting_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT,
+      FOREIGN KEY (meeting_id) REFERENCES meetings(id)
+    );
+  `);
   return db;
 }
 

@@ -34,6 +34,8 @@ export class AdminCalendar implements OnInit {
   meetings: Meeting[] = [];
   weekDays: CalendarDay[] = [];
 
+  selectedMeeting: Meeting | null = null;
+
   currentWeekStart = this.getStartOfWeek(new Date());
 
   hours = [
@@ -144,16 +146,19 @@ export class AdminCalendar implements OnInit {
   previousWeek(): void {
     this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
     this.generateWeekDays();
+    this.closeMeetingDetails();
   }
 
   nextWeek(): void {
     this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
     this.generateWeekDays();
+    this.closeMeetingDetails();
   }
 
   goToToday(): void {
     this.currentWeekStart = this.getStartOfWeek(new Date());
     this.generateWeekDays();
+    this.closeMeetingDetails();
   }
 
   isToday(day: CalendarDay): boolean {
@@ -165,6 +170,14 @@ export class AdminCalendar implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatDate(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    return new Date(value).toLocaleString('pl-PL');
   }
 
   formatMeetingTime(meeting: Meeting): string {
@@ -186,6 +199,14 @@ export class AdminCalendar implements OnInit {
       default:
         return 'status-default';
     }
+  }
+
+  showMeetingDetails(meeting: Meeting): void {
+    this.selectedMeeting = meeting;
+  }
+
+  closeMeetingDetails(): void {
+    this.selectedMeeting = null;
   }
 
   goBack(): void {

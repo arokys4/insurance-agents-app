@@ -14,153 +14,219 @@
 
     <section class="details-card" *ngIf="selectedMeeting">
     <div class="details-header">
-        <div>
+      <div>
         <h2>Szczegóły spotkania</h2>
-        </div>
+        <p>Dane wybranego spotkania przypisanego do agenta.</p>
+      </div>
 
-        <button type="button" class="secondary-button" (click)="closeDetails()">
+      <button type="button" class="secondary-button" (click)="closeDetails()">
         Zamknij
-        </button>
+      </button>
     </div>
 
-    <div class="details-grid">
+    <div class="details-content">
+      <div class="details-grid">
+        <div class="details-item">
+          <strong>Tytuł</strong>
+          <span>{{ selectedMeeting.title }}</span>
+        </div>
+
+        <div class="details-item">
+          <strong>Typ</strong>
+          <span>{{ selectedMeeting.meetingType }}</span>
+        </div>
+
+        <div class="details-item">
+          <strong>Agent</strong>
+          <span>{{ selectedMeeting.agentName }}</span>
+        </div>
+
+        <div class="details-item">
+          <strong>Status</strong>
+          <span>{{ selectedMeeting.status }}</span>
+        </div>
+
+        <div class="details-item">
+          <strong>Rozpoczęcie</strong>
+          <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+        </div>
+
+        <div class="details-item">
+          <strong>Zakończenie</strong>
+          <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+        </div>
+
+        <div class="details-item full-width">
+          <strong>Opis</strong>
+          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes-section">
+      <div class="notes-header">
         <div>
-        <strong>Tytuł:</strong>
-        <span>{{ selectedMeeting.title }}</span>
+          <h3>Notatki po spotkaniu</h3>
+          <p>W tym miejscu można zapisać ustalenia, przebieg spotkania lub informacje po oględzinach.</p>
         </div>
-
-      <div>
-        <strong>Typ:</strong>
-        <span>{{ selectedMeeting.meetingType }}</span>
       </div>
 
-      <div>
-        <strong>Agent:</strong>
-        <span>{{ selectedMeeting.agentName }}</span>
+      <div class="note-form">
+        <label for="noteContent">Treść notatki</label>
+
+        <textarea
+          id="noteContent"
+          name="noteContent"
+          rows="4"
+          [(ngModel)]="noteContent"
+          placeholder="Wpisz notatkę po spotkaniu, np. ustalenia z klientem, wynik oględzin lub dodatkowe informacje."
+        ></textarea>
+
+        <div class="note-actions">
+          <button type="button" (click)="saveNote()">
+            {{ editNoteMode ? 'Zapisz zmianę notatki' : 'Dodaj notatkę' }}
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            *ngIf="editNoteMode"
+            (click)="clearNoteForm()"
+          >
+            Anuluj edycję
+          </button>
+        </div>
       </div>
 
-      <div>
-        <strong>Status:</strong>
-        <span>{{ selectedMeeting.status }}</span>
+      <div class="notes-list" *ngIf="meetingNotes.length > 0">
+        <div class="note-card" *ngFor="let note of meetingNotes">
+          <p class="note-content">{{ note.content }}</p>
+
+          <div class="note-meta">
+            <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
+            <span *ngIf="note.updatedAt">Edytowano: {{ formatDateTime(note.updatedAt) }}</span>
+          </div>
+
+          <div class="note-buttons">
+            <button type="button" (click)="editNote(note)">Edytuj</button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteNote(note)"
+            >
+              Usuń
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <strong>Rozpoczęcie:</strong>
-        <span>{{ formatDate(selectedMeeting.startDate) }}</span>
-      </div>
-
-      <div>
-        <strong>Zakończenie:</strong>
-        <span>{{ formatDate(selectedMeeting.endDate) }}</span>
-      </div>
-
-      <div class="details-description">
-        <strong>Opis:</strong>
-        <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
-      </div>
+      <p class="empty-message" *ngIf="meetingNotes.length === 0">
+        Brak notatek dla tego spotkania.
+      </p>
     </div>
   </section>
 
-  <section class="form-card" *ngIf="showForm">
-    <h2>{{ editMode ? 'Edycja spotkania' : 'Dodawanie nowego spotkania' }}</h2>
+    <section class="form-card" *ngIf="showForm">
+      <h2>{{ editMode ? 'Edycja spotkania' : 'Dodawanie nowego spotkania' }}</h2>
 
-    <form (ngSubmit)="saveMeeting()">
-      <div class="form-grid">
-        <div class="form-field">
-          <label for="title">Tytuł spotkania</label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            [(ngModel)]="meetingForm.title"
-            placeholder="np. Spotkanie"
-          />
+      <form (ngSubmit)="saveMeeting()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="title">Tytuł spotkania</label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              [(ngModel)]="meetingForm.title"
+              placeholder="np. Spotkanie"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="meetingType">Typ spotkania</label>
+            <select
+              id="meetingType"
+              name="meetingType"
+              [(ngModel)]="meetingForm.meetingType"
+            >
+              <option *ngFor="let type of meetingTypes" [value]="type">
+                {{ type }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="startDate">Data rozpoczęcia</label>
+            <input
+              id="startDate"
+              name="startDate"
+              type="datetime-local"
+              [(ngModel)]="meetingForm.startDate"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="endDate">Data zakończenia</label>
+            <input
+              id="endDate"
+              name="endDate"
+              type="datetime-local"
+              [(ngModel)]="meetingForm.endDate"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="agentId">Przypisany agent</label>
+            <select
+              id="agentId"
+              name="agentId"
+              [(ngModel)]="meetingForm.agentId"
+            >
+              <option [ngValue]="null">Wybierz agenta</option>
+
+              <option *ngFor="let agent of agents" [ngValue]="agent.id">
+                {{ agent.firstName }} {{ agent.lastName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="status">Status</label>
+            <select
+              id="status"
+              name="status"
+              [(ngModel)]="meetingForm.status"
+            >
+              <option *ngFor="let status of statuses" [value]="status">
+                {{ status }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field full-width">
+            <label for="description">Opis</label>
+            <textarea
+              id="description"
+              name="description"
+              rows="4"
+              [(ngModel)]="meetingForm.description"
+              placeholder="Dodatkowe informacje dotyczące spotkania"
+            ></textarea>
+          </div>
         </div>
 
-        <div class="form-field">
-          <label for="meetingType">Typ spotkania</label>
-          <select
-            id="meetingType"
-            name="meetingType"
-            [(ngModel)]="meetingForm.meetingType"
-          >
-            <option *ngFor="let type of meetingTypes" [value]="type">
-              {{ type }}
-            </option>
-          </select>
+        <div class="form-actions">
+          <button type="submit">
+            {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+          </button>
+
+          <button type="button" class="secondary-button" (click)="cancel()">
+            Anuluj
+          </button>
         </div>
-
-        <div class="form-field">
-          <label for="startDate">Data rozpoczęcia</label>
-          <input
-            id="startDate"
-            name="startDate"
-            type="datetime-local"
-            [(ngModel)]="meetingForm.startDate"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="endDate">Data zakończenia</label>
-          <input
-            id="endDate"
-            name="endDate"
-            type="datetime-local"
-            [(ngModel)]="meetingForm.endDate"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="agentId">Przypisany agent</label>
-          <select
-            id="agentId"
-            name="agentId"
-            [(ngModel)]="meetingForm.agentId"
-          >
-            <option [ngValue]="null">Wybierz agenta</option>
-
-            <option *ngFor="let agent of agents" [ngValue]="agent.id">
-              {{ agent.firstName }} {{ agent.lastName }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label for="status">Status</label>
-          <select
-            id="status"
-            name="status"
-            [(ngModel)]="meetingForm.status"
-          >
-            <option *ngFor="let status of statuses" [value]="status">
-              {{ status }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-field full-width">
-          <label for="description">Opis</label>
-          <textarea
-            id="description"
-            name="description"
-            rows="4"
-            [(ngModel)]="meetingForm.description"
-            placeholder="Dodatkowe informacje dotyczące spotkania"
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit">
-          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
-        </button>
-
-        <button type="button" class="secondary-button" (click)="cancel()">
-          Anuluj
-        </button>
-      </div>
-    </form>
-  </section>
+      </form>
+    </section>
 
   <section class="meetings-table">
     <table>

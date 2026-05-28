@@ -25,6 +25,14 @@ interface Meeting {
   agentName?: string;
 }
 
+interface MeetingNote {
+  id?: number;
+  meetingId: number;
+  content: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 @Component({
   selector: 'app-admin-meetings',
   imports: [NgFor, NgIf, FormsModule],
@@ -34,9 +42,15 @@ interface Meeting {
 export class AdminMeetings implements OnInit {
   private meetingsApiUrl = 'http://localhost:4000/api/meetings';
   private agentsApiUrl = 'http://localhost:4000/api/agents';
+  private notesApiUrl = 'http://localhost:4000/api/meeting-notes';
 
   meetings: Meeting[] = [];
   agents: Agent[] = [];
+
+  meetingNotes: MeetingNote[] = [];
+  noteContent = '';
+  editNoteMode = false;
+  editedNoteId: number | null = null;
 
   showForm = false;
   editMode = false;
@@ -108,6 +122,8 @@ export class AdminMeetings implements OnInit {
     this.editMode = false;
     this.editedMeetingId = null;
     this.selectedMeeting = null;
+    this.meetingNotes = [];
+    this.clearNoteForm();
     this.showForm = true;
   }
 
@@ -194,16 +210,147 @@ export class AdminMeetings implements OnInit {
     this.editMode = true;
     this.editedMeetingId = meeting.id ?? null;
     this.selectedMeeting = null;
+    this.meetingNotes = [];
+    this.clearNoteForm();
     this.showForm = true;
   }
 
   showDetails(meeting: Meeting): void {
     this.selectedMeeting = meeting;
     this.showForm = false;
+    this.clearNoteForm();
+
+    if (meeting.id) {
+      this.loadNotes(meeting.id);
+    }
   }
 
   closeDetails(): void {
     this.selectedMeeting = null;
+    this.meetingNotes = [];
+    this.clearNoteForm();
+  }
+
+  loadNotes(meetingId: number): void {
+    this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
+      next: (notes) => {
+        this.meetingNotes = notes;
+      },
+      error: (error) => {
+        console.error('Błąd pobierania notatek:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać notatek spotkania.';
+
+        alert(message);
+      }
+    });
+  }
+
+  saveNote(): void {
+    if (!this.selectedMeeting?.id) {
+      alert('Nie wybrano spotkania.');
+      return;
+    }
+
+    const content = this.noteContent.trim();
+
+    if (content.length < 5) {
+      alert('Notatka musi mieć co najmniej 5 znaków.');
+      return;
+    }
+
+    if (this.editNoteMode && this.editedNoteId !== null) {
+      this.updateNote(content);
+    } else {
+      this.addNote(content);
+    }
+  }
+
+  addNote(content: string): void {
+    if (!this.selectedMeeting?.id) {
+      return;
+    }
+
+    const payload = {
+      meetingId: this.selectedMeeting.id,
+      content
+    };
+
+    this.http.post<MeetingNote>(this.notesApiUrl, payload).subscribe({
+      next: () => {
+        this.loadNotes(this.selectedMeeting!.id!);
+        this.clearNoteForm();
+      },
+      error: (error) => {
+        console.error('Błąd dodawania notatki:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się dodać notatki.';
+
+        alert(message);
+      }
+    });
+  }
+
+  editNote(note: MeetingNote): void {
+    this.noteContent = note.content;
+    this.editedNoteId = note.id ?? null;
+    this.editNoteMode = true;
+  }
+
+  updateNote(content: string): void {
+    if (this.editedNoteId === null || !this.selectedMeeting?.id) {
+      return;
+    }
+
+    this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, { content }).subscribe({
+      next: () => {
+        this.loadNotes(this.selectedMeeting!.id!);
+        this.clearNoteForm();
+      },
+      error: (error) => {
+        console.error('Błąd edycji notatki:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się zaktualizować notatki.';
+
+        alert(message);
+      }
+    });
+  }
+
+  deleteNote(note: MeetingNote): void {
+    if (!note.id || !this.selectedMeeting?.id) {
+      return;
+    }
+
+    const confirmDelete = confirm('Czy na pewno chcesz usunąć tę notatkę?');
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    this.http.delete(`${this.notesApiUrl}/${note.id}`).subscribe({
+      next: () => {
+        this.loadNotes(this.selectedMeeting!.id!);
+        this.clearNoteForm();
+      },
+      error: (error) => {
+        console.error('Błąd usuwania notatki:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się usunąć notatki.';
+
+        alert(message);
+      }
+    });
+  }
+
+  clearNoteForm(): void {
+    this.noteContent = '';
+    this.editNoteMode = false;
+    this.editedNoteId = null;
   }
 
   changeStatus(meeting: Meeting, status: string): void {
@@ -242,6 +389,8 @@ export class AdminMeetings implements OnInit {
     this.http.delete(`${this.meetingsApiUrl}/${meeting.id}`).subscribe({
       next: () => {
         this.selectedMeeting = null;
+        this.meetingNotes = [];
+        this.clearNoteForm();
         this.loadMeetings();
       },
       error: (error) => {
@@ -277,6 +426,14 @@ export class AdminMeetings implements OnInit {
   formatDate(value: string): string {
     if (!value) {
       return '';
+    }
+
+    return new Date(value).toLocaleString('pl-PL');
+  }
+
+  formatDateTime(value?: string): string {
+    if (!value) {
+      return '-';
     }
 
     return new Date(value).toLocaleString('pl-PL');
