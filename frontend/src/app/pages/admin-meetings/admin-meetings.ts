@@ -11,6 +11,7 @@ interface Agent {
   email: string;
   phone: string;
   status: string;
+  role?: string;
 }
 
 interface Meeting {
@@ -113,7 +114,10 @@ export class AdminMeetings implements OnInit {
   loadAgents(): void {
     this.http.get<Agent[]>(this.agentsApiUrl).subscribe({
       next: (agents) => {
-        this.agents = agents.filter(agent => agent.status === 'Aktywny');
+        this.agents = agents.filter(agent =>
+          agent.status === 'Aktywny' &&
+          agent.role !== 'ADMIN'
+        );
       },
       error: (error) => {
         console.error('Błąd pobierania agentów:', error);

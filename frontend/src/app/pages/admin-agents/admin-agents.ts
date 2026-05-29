@@ -54,7 +54,7 @@ export class AdminAgents implements OnInit {
   loadAgents(): void {
     this.http.get<Agent[]>(this.apiUrl).subscribe({
       next: (agents) => {
-        this.agents = agents;
+        this.agents = agents.filter(agent => agent.role !== 'ADMIN');
       },
       error: (error) => {
         console.error('Błąd pobierania agentów:', error);

@@ -124,6 +124,11 @@ export class AgentWorkTime implements OnInit {
     const start = new Date(`${this.entryForm.workDate}T${this.entryForm.startTime}`);
     const end = new Date(`${this.entryForm.workDate}T${this.entryForm.endTime}`);
 
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      alert('Nieprawidłowy format daty lub godziny.');
+      return false;
+    }
+
     if (end <= start) {
       alert('Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia.');
       return false;
@@ -190,7 +195,7 @@ export class AgentWorkTime implements OnInit {
       workDate: entry.workDate,
       startTime: entry.startTime,
       endTime: entry.endTime,
-      description: entry.description
+      description: entry.description || ''
     };
 
     this.editMode = true;
