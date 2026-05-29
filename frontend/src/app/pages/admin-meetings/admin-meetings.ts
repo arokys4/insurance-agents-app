@@ -59,6 +59,8 @@ export class AdminMeetings implements OnInit {
   meetings: Meeting[] = [];
   agents: Agent[] = [];
 
+  pendingStatuses: { [meetingId: number]: string } = {};
+
   meetingNotes: MeetingNote[] = [];
   noteContent = '';
   editNoteMode = false;
@@ -124,6 +126,13 @@ export class AdminMeetings implements OnInit {
     this.http.get<Meeting[]>(this.meetingsApiUrl).subscribe({
       next: (meetings) => {
         this.meetings = meetings;
+        this.pendingStatuses = {};
+
+        this.meetings.forEach((meeting) => {
+          if (meeting.id !== undefined) {
+            this.pendingStatuses[meeting.id] = meeting.status;
+          }
+        });
       },
       error: (error) => {
         console.error('Błąd pobierania spotkań:', error);
@@ -138,6 +147,8 @@ export class AdminMeetings implements OnInit {
     this.editedMeetingId = null;
     this.selectedMeeting = null;
     this.meetingNotes = [];
+    this.meetingAttachments = [];
+    this.selectedFile = null;
     this.clearNoteForm();
     this.showForm = true;
   }
@@ -226,6 +237,8 @@ export class AdminMeetings implements OnInit {
     this.editedMeetingId = meeting.id ?? null;
     this.selectedMeeting = null;
     this.meetingNotes = [];
+    this.meetingAttachments = [];
+    this.selectedFile = null;
     this.clearNoteForm();
     this.showForm = true;
   }
@@ -234,19 +247,76 @@ export class AdminMeetings implements OnInit {
     this.selectedMeeting = meeting;
     this.showForm = false;
     this.clearNoteForm();
+    this.selectedFile = null;
 
-    if (meeting.id) {
+    if (meeting.id !== undefined) {
       this.loadNotes(meeting.id);
+      this.loadAttachments(meeting.id);
     }
   }
 
-    closeDetails(): void {
-      this.selectedMeeting = null;
-      this.meetingNotes = [];
-      this.meetingAttachments = [];
-      this.selectedFile = null;
-      this.clearNoteForm();
+  closeDetails(): void {
+    this.selectedMeeting = null;
+    this.meetingNotes = [];
+    this.meetingAttachments = [];
+    this.selectedFile = null;
+    this.clearNoteForm();
+  }
+
+  getPendingStatus(meeting: Meeting): string {
+    if (meeting.id === undefined) {
+      return meeting.status;
     }
+
+    return this.pendingStatuses[meeting.id] || meeting.status;
+  }
+
+  setPendingStatus(meeting: Meeting, status: string): void {
+    if (meeting.id === undefined) {
+      return;
+    }
+
+    this.pendingStatuses[meeting.id] = status;
+  }
+
+  hasPendingStatusChange(meeting: Meeting): boolean {
+    if (meeting.id === undefined) {
+      return false;
+    }
+
+    return this.pendingStatuses[meeting.id] !== meeting.status;
+  }
+
+  saveStatus(meeting: Meeting): void {
+    if (meeting.id === undefined) {
+      return;
+    }
+
+    const selectedStatus = this.getPendingStatus(meeting);
+
+    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${meeting.id}/status`, {
+      status: selectedStatus
+    }).subscribe({
+      next: () => {
+        if (this.selectedMeeting && this.selectedMeeting.id === meeting.id) {
+          this.selectedMeeting = {
+            ...this.selectedMeeting,
+            status: selectedStatus
+          };
+        }
+
+        this.loadMeetings();
+      },
+      error: (error) => {
+        console.error('Błąd zmiany statusu spotkania:', error);
+
+        const message =
+          error.error?.error || 'Nie udało się zmienić statusu spotkania.';
+
+        alert(message);
+      }
+    });
+  }
 
   loadNotes(meetingId: number): void {
     this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
@@ -364,7 +434,13 @@ export class AdminMeetings implements OnInit {
     });
   }
 
-    loadAttachments(meetingId: number): void {
+  clearNoteForm(): void {
+    this.noteContent = '';
+    this.editNoteMode = false;
+    this.editedNoteId = null;
+  }
+
+  loadAttachments(meetingId: number): void {
     this.http.get<MeetingAttachment[]>(`${this.attachmentsApiUrl}/meeting/${meetingId}`).subscribe({
       next: (attachments) => {
         this.meetingAttachments = attachments;
@@ -412,6 +488,7 @@ export class AdminMeetings implements OnInit {
         this.selectedFile = null;
 
         const fileInput = document.getElementById('attachmentFile') as HTMLInputElement;
+
         if (fileInput) {
           fileInput.value = '';
         }
@@ -457,32 +534,6 @@ export class AdminMeetings implements OnInit {
     return `${this.backendUrl}${attachment.filePath}`;
   }
 
-  clearNoteForm(): void {
-    this.noteContent = '';
-    this.editNoteMode = false;
-    this.editedNoteId = null;
-  }
-
-  changeStatus(meeting: Meeting, status: string): void {
-    if (!meeting.id) {
-      return;
-    }
-
-    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${meeting.id}/status`, { status }).subscribe({
-      next: () => {
-        this.loadMeetings();
-      },
-      error: (error) => {
-        console.error('Błąd zmiany statusu spotkania:', error);
-
-        const message =
-          error.error?.error || 'Nie udało się zmienić statusu spotkania.';
-
-        alert(message);
-      }
-    });
-  }
-
   deleteMeeting(meeting: Meeting): void {
     if (!meeting.id) {
       return;
@@ -500,6 +551,8 @@ export class AdminMeetings implements OnInit {
       next: () => {
         this.selectedMeeting = null;
         this.meetingNotes = [];
+        this.meetingAttachments = [];
+        this.selectedFile = null;
         this.clearNoteForm();
         this.loadMeetings();
       },

@@ -59,6 +59,7 @@ export class AgentDashboard implements OnInit {
   meetings: Meeting[] = [];
 
   selectedMeeting: Meeting | null = null;
+  selectedStatus = '';
 
   meetingNotes: MeetingNote[] = [];
   noteContent = '';
@@ -118,6 +119,7 @@ export class AgentDashboard implements OnInit {
 
   showDetails(meeting: Meeting): void {
     this.selectedMeeting = meeting;
+    this.selectedStatus = meeting.status;
     this.clearNoteForm();
     this.selectedFile = null;
 
@@ -129,20 +131,24 @@ export class AgentDashboard implements OnInit {
 
   closeDetails(): void {
     this.selectedMeeting = null;
+    this.selectedStatus = '';
     this.meetingNotes = [];
     this.meetingAttachments = [];
     this.selectedFile = null;
     this.clearNoteForm();
   }
 
-  changeStatus(status: string): void {
+  saveStatus(): void {
     if (!this.selectedMeeting?.id) {
       return;
     }
 
-    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${this.selectedMeeting.id}/status`, { status }).subscribe({
+    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${this.selectedMeeting.id}/status`, {
+      status: this.selectedStatus
+    }).subscribe({
       next: (updatedMeeting) => {
         this.selectedMeeting = updatedMeeting;
+        this.selectedStatus = updatedMeeting.status;
         this.loadMyMeetings();
       },
       error: (error) => {
@@ -154,6 +160,14 @@ export class AgentDashboard implements OnInit {
         alert(message);
       }
     });
+  }
+
+  hasStatusChanged(): boolean {
+    if (!this.selectedMeeting) {
+      return false;
+    }
+
+    return this.selectedStatus !== this.selectedMeeting.status;
   }
 
   loadNotes(meetingId: number): void {
@@ -385,6 +399,10 @@ export class AgentDashboard implements OnInit {
   
   goToWorkTime(): void {
     this.router.navigate(['/agent/work-time']);
+  }
+
+  goToDocuments(): void {
+    this.router.navigate(['/agent/documents']);
   }
 
   logout(): void {

@@ -262,10 +262,14 @@ export class AgentWorkTime implements OnInit {
 
   formatHours(value?: number): string {
     if (value === undefined || value === null) {
-      return '0';
+      return '0 godz. 00 min';
     }
 
-    return value.toFixed(2);
+    const totalMinutes = Math.round(value * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours} godz. ${String(minutes).padStart(2, '0')} min`;
   }
 
   getTotalHours(): string {
@@ -273,7 +277,7 @@ export class AgentWorkTime implements OnInit {
       return sum + (entry.durationHours || 0);
     }, 0);
 
-    return total.toFixed(2);
+    return this.formatHours(total);
   }
 
   goBack(): void {

@@ -241,10 +241,14 @@ export class AdminWorkTime implements OnInit {
 
   formatHours(value?: number): string {
     if (value === undefined || value === null) {
-      return '0';
+      return '0 godz. 00 min';
     }
 
-    return value.toFixed(2);
+    const totalMinutes = Math.round(value * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours} godz. ${String(minutes).padStart(2, '0')} min`;
   }
 
   goBack(): void {

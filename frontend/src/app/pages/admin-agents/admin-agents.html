@@ -58,16 +58,15 @@
     <form (ngSubmit)="saveAgent()">
       <div class="form-grid">
         <div class="form-field">
-        <label for="firstName">Imię</label>
+          <label for="firstName">Imię</label>
           <input
             id="firstName"
             name="firstName"
             type="text"
             [(ngModel)]="agentForm.firstName"
-            (blur)="formatFirstName()"
-            placeholder="np. Adam"
+            placeholder="np. Jan"
           />
-      </div>
+        </div>
 
         <div class="form-field">
           <label for="lastName">Nazwisko</label>
@@ -76,8 +75,7 @@
             name="lastName"
             type="text"
             [(ngModel)]="agentForm.lastName"
-            (blur)="formatLastName()"
-            placeholder="np. Zieliński"
+            placeholder="np. Kowalski"
           />
         </div>
 
@@ -88,7 +86,7 @@
             name="email"
             type="email"
             [(ngModel)]="agentForm.email"
-            placeholder="np. adam.zielinski@firma.pl"
+            placeholder="np. jan.kowalski@firma.pl"
           />
         </div>
 
@@ -98,11 +96,9 @@
             id="phone"
             name="phone"
             type="text"
-            inputmode="numeric"
             maxlength="9"
             [(ngModel)]="agentForm.phone"
-            (input)="onPhoneInput($event)"
-            placeholder="np. 500700800"
+            placeholder="np. 500600700"
           />
         </div>
 
@@ -117,21 +113,29 @@
             <option value="Nieaktywny">Nieaktywny</option>
           </select>
         </div>
+
+        <div class="form-field">
+          <label for="password">
+            {{ editMode ? 'Nowe hasło startowe' : 'Hasło startowe' }}
+          </label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            [(ngModel)]="agentForm.password"
+            [placeholder]="editMode ? 'Zostaw puste, jeśli nie zmieniasz hasła' : 'Minimum 6 znaków'"
+          />
+        </div>
       </div>
 
-      <div class="form-field">
-        <label for="password">
-          {{ editMode ? 'Nowe hasło startowe' : 'Hasło startowe' }}
-        </label>
+      <p class="form-hint" *ngIf="!editMode">
+        Hasło startowe zostanie użyte przez agenta przy pierwszym logowaniu. Po zalogowaniu agent zostanie poproszony o ustawienie własnego hasła.
+      </p>
 
-        <input
-          id="password"
-          name="password"
-          type="password"
-          [(ngModel)]="agentForm.password"
-          [placeholder]="editMode ? 'Zostaw puste, jeśli nie zmieniasz hasła' : 'Minimum 6 znaków'"
-        />
-      </div>
+      <p class="form-hint" *ngIf="editMode">
+        Jeżeli nie chcesz zmieniać hasła agenta, zostaw pole hasła puste.
+      </p>
 
       <div class="form-actions">
         <button type="submit">
@@ -143,7 +147,7 @@
         </button>
       </div>
     </form>
-  </section>
+</section>
 
   <section class="agents-table">
     <table>

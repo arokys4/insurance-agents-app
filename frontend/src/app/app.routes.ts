@@ -10,6 +10,7 @@ import { AdminWorkTime } from './pages/admin-work-time/admin-work-time';
 import { ChangePassword } from './pages/change-password/change-password';
 import { AgentCalendar } from './pages/agent-calendar/agent-calendar';
 import { AgentWorkTime } from './pages/agent-work-time/agent-work-time';
+import { AgentDocuments } from './pages/agent-documents/agent-documents';
 
 
 export const routes: Routes = [
@@ -54,6 +55,11 @@ export const routes: Routes = [
   {
     path: 'agent/work-time',
     component: AgentWorkTime,
+    canActivate: [agentGuard]
+  },
+  {
+    path: 'agent/documents',
+    component: AgentDocuments,
     canActivate: [agentGuard]
   },
   {

@@ -12,7 +12,7 @@
     <button type="button" (click)="showAddMeetingForm()">Dodaj spotkanie</button>
   </section>
 
-  <section class="details-card" *ngIf="selectedMeeting">
+  <section class="details-card" *ngIf="selectedMeeting as meetingDetails">
     <div class="details-header">
       <div>
         <h2>Szczegóły spotkania</h2>
@@ -28,37 +28,37 @@
       <div class="details-grid">
         <div class="details-item">
           <strong>Tytuł</strong>
-          <span>{{ selectedMeeting.title }}</span>
+          <span>{{ meetingDetails.title }}</span>
         </div>
 
         <div class="details-item">
           <strong>Typ</strong>
-          <span>{{ selectedMeeting.meetingType }}</span>
+          <span>{{ meetingDetails.meetingType }}</span>
         </div>
 
         <div class="details-item">
           <strong>Agent</strong>
-          <span>{{ selectedMeeting.agentName }}</span>
+          <span>{{ meetingDetails.agentName }}</span>
         </div>
 
         <div class="details-item">
           <strong>Status</strong>
-          <span>{{ selectedMeeting.status }}</span>
+          <span>{{ meetingDetails.status }}</span>
         </div>
 
         <div class="details-item">
           <strong>Rozpoczęcie</strong>
-          <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+          <span>{{ formatDate(meetingDetails.startDate) }}</span>
         </div>
 
         <div class="details-item">
           <strong>Zakończenie</strong>
-          <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+          <span>{{ formatDate(meetingDetails.endDate) }}</span>
         </div>
 
         <div class="details-item full-width">
           <strong>Opis</strong>
-          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+          <span>{{ meetingDetails.description || 'Brak opisu' }}</span>
         </div>
       </div>
     </div>
@@ -319,16 +319,29 @@
             <br />
             do {{ formatDate(meeting.endDate) }}
           </td>
+
           <td>
-            <select
-              [ngModel]="meeting.status"
-              (ngModelChange)="changeStatus(meeting, $event)"
-            >
-              <option *ngFor="let status of statuses" [value]="status">
-                {{ status }}
-              </option>
-            </select>
+            <div class="status-control">
+              <select
+                [ngModel]="getPendingStatus(meeting)"
+                (ngModelChange)="setPendingStatus(meeting, $event)"
+              >
+                <option *ngFor="let status of statuses" [value]="status">
+                  {{ status }}
+                </option>
+              </select>
+
+              <button
+                type="button"
+                class="small-button"
+                *ngIf="hasPendingStatusChange(meeting)"
+                (click)="saveStatus(meeting)"
+              >
+                Zapisz
+              </button>
+            </div>
           </td>
+
           <td>
             <button type="button" (click)="editMeeting(meeting)">Edytuj</button>
 

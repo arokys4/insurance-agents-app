@@ -25,7 +25,7 @@
       Czas pracy
     </div>
 
-    <div class="nav-card disabled">
+    <div class="nav-card" (click)="goToDocuments()">
       Dokumentacja
     </div>
   </section>
@@ -111,14 +111,24 @@
       <div class="details-item">
         <strong>Status</strong>
 
-        <select
-          [ngModel]="selectedMeeting.status"
-          (ngModelChange)="changeStatus($event)"
-        >
-          <option *ngFor="let status of statuses" [value]="status">
-            {{ status }}
-          </option>
-        </select>
+        <div class="status-control">
+          <select
+            [(ngModel)]="selectedStatus"
+          >
+            <option *ngFor="let status of statuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="small-button"
+            *ngIf="hasStatusChanged()"
+            (click)="saveStatus()"
+          >
+            Zapisz
+          </button>
+        </div>
       </div>
 
       <div class="details-item">
