@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
@@ -11,11 +11,13 @@ import { HttpClient } from '@angular/common/http';
   styleUrl: './change-password.css'
 })
 export class ChangePassword {
-  private changePasswordApiUrl = 'http://localhost:4000/api/auth/change-password';
+  private authApiUrl = 'http://localhost:4000/api/auth';
 
   newPassword = '';
-  repeatPassword = '';
+  confirmPassword = '';
+
   errorMessage = '';
+  successMessage = '';
 
   constructor(
     private router: Router,
@@ -24,43 +26,64 @@ export class ChangePassword {
 
   changePassword(): void {
     this.errorMessage = '';
+    this.successMessage = '';
 
-    if (!this.newPassword || !this.repeatPassword) {
-      this.errorMessage = 'Uzupełnij oba pola hasła.';
-      return;
-    }
+    const userJson = localStorage.getItem('user');
 
-    if (this.newPassword.length < 6) {
-      this.errorMessage = 'Hasło musi mieć co najmniej 6 znaków.';
-      return;
-    }
-
-    if (this.newPassword !== this.repeatPassword) {
-      this.errorMessage = 'Hasła nie są takie same.';
-      return;
-    }
-
-    const userId = localStorage.getItem('userId');
-
-    if (!userId) {
+    if (!userJson) {
+      this.errorMessage = 'Brak danych zalogowanego użytkownika.';
       this.router.navigate(['/login']);
       return;
     }
 
-    this.http.patch(this.changePasswordApiUrl, {
-      userId: Number(userId),
-      newPassword: this.newPassword
-    }).subscribe({
+    const user = JSON.parse(userJson);
+
+    const newPasswordValue = this.newPassword.trim();
+    const confirmPasswordValue = this.confirmPassword.trim();
+
+    if (!newPasswordValue || !confirmPasswordValue) {
+      this.errorMessage = 'Uzupełnij wszystkie pola.';
+      return;
+    }
+
+    if (newPasswordValue !== confirmPasswordValue) {
+      this.errorMessage = 'Hasła nie są takie same.';
+      return;
+    }
+
+    const passwordError = this.validatePasswordStrength(newPasswordValue);
+
+    if (passwordError) {
+      this.errorMessage = passwordError;
+      return;
+    }
+
+    const payload = {
+      userId: user.id,
+      newPassword: newPasswordValue,
+      confirmPassword: confirmPasswordValue
+    };
+
+    this.http.post(`${this.authApiUrl}/change-password`, payload).subscribe({
       next: () => {
-        const userJson = localStorage.getItem('user');
+        const updatedUser = {
+          ...user,
+          mustChangePassword: false
+        };
 
-        if (userJson) {
-          const user = JSON.parse(userJson);
-          user.mustChangePassword = false;
-          localStorage.setItem('user', JSON.stringify(user));
-        }
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem('role', updatedUser.role);
+        localStorage.setItem('userId', String(updatedUser.id));
 
-        this.router.navigate(['/agent']);
+        this.successMessage = 'Hasło zostało zmienione.';
+
+        setTimeout(() => {
+          if (updatedUser.role === 'ADMIN') {
+            this.router.navigate(['/admin']);
+          } else {
+            this.router.navigate(['/agent']);
+          }
+        }, 700);
       },
       error: (error) => {
         console.error('Błąd zmiany hasła:', error);
@@ -69,5 +92,34 @@ export class ChangePassword {
           error.error?.error || 'Nie udało się zmienić hasła.';
       }
     });
+  }
+
+  validatePasswordStrength(password: string): string | null {
+    if (!password || password.length < 8) {
+      return 'Hasło musi mieć co najmniej 8 znaków.';
+    }
+
+    if (!/[a-z]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną małą literę.';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną wielką literę.';
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną cyfrę.';
+    }
+
+    if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
+    }
+
+    return null;
+  }
+
+  logout(): void {
+    localStorage.clear();
+    this.router.navigate(['/login']);
   }
 }

@@ -1,6 +1,30 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 
+function validatePasswordStrength(password) {
+  if (!password || password.length < 8) {
+    return 'Hasło musi mieć co najmniej 8 znaków.';
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną małą literę.';
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną wielką literę.';
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną cyfrę.';
+  }
+
+  if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
+  }
+
+  return null;
+}
+
 function authRouter(db) {
   const router = express.Router();
 
@@ -77,20 +101,29 @@ function authRouter(db) {
     }
   });
 
-  router.patch('/change-password', async (req, res) => {
+  async function changePasswordHandler(req, res) {
     try {
       const userId = Number(req.body.userId);
       const newPassword = req.body.newPassword || '';
+      const confirmPassword = req.body.confirmPassword || req.body.repeatPassword || '';
 
-      if (!userId || !newPassword) {
+      if (!userId || !newPassword || !confirmPassword) {
         return res.status(400).json({
-          error: 'Podaj identyfikator użytkownika i nowe hasło.'
+          error: 'Uzupełnij wszystkie pola.'
         });
       }
 
-      if (newPassword.length < 6) {
+      if (newPassword !== confirmPassword) {
         return res.status(400).json({
-          error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
+          error: 'Hasła nie są takie same.'
+        });
+      }
+
+      const passwordError = validatePasswordStrength(newPassword);
+
+      if (passwordError) {
+        return res.status(400).json({
+          error: passwordError
         });
       }
 
@@ -114,7 +147,9 @@ function authRouter(db) {
       await db.run(
         `
         UPDATE agents
-        SET password = ?, must_change_password = 0
+        SET
+          password = ?,
+          must_change_password = 0
         WHERE id = ?
         `,
         [hashedPassword, userId]
@@ -130,7 +165,10 @@ function authRouter(db) {
         error: 'Nie udało się zmienić hasła.'
       });
     }
-  });
+  }
+
+  router.post('/change-password', changePasswordHandler);
+  router.patch('/change-password', changePasswordHandler);
 
   return router;
 }
