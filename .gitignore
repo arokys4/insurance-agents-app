@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Angular build
+dist/
+.angular/
+
+# Environment files
+.env
+
+# Database
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*

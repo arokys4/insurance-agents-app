@@ -1,4 +1,8 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+
+const uploadDirectory = path.join(__dirname, '../../uploads');
 
 const allowedMeetingTypes = [
   'Spotkanie z klientem',
@@ -401,6 +405,39 @@ function meetingsRouter(db) {
         });
       }
 
+      const attachments = await db.all(
+        `
+        SELECT id, file_name AS fileName
+        FROM meeting_attachments
+        WHERE meeting_id = ?
+        `,
+        [id]
+      );
+
+      for (const attachment of attachments) {
+        const filePath = path.join(uploadDirectory, attachment.fileName);
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      await db.run(
+        `
+        DELETE FROM meeting_attachments
+        WHERE meeting_id = ?
+        `,
+        [id]
+      );
+
+      await db.run(
+        `
+        DELETE FROM meeting_notes
+        WHERE meeting_id = ?
+        `,
+        [id]
+      );
+
       await db.run(
         `
         DELETE FROM meetings
@@ -410,7 +447,7 @@ function meetingsRouter(db) {
       );
 
       res.json({
-        message: 'Spotkanie zostało usunięte.'
+        message: 'Spotkanie oraz powiązane notatki i załączniki zostały usunięte.'
       });
     } catch (error) {
       console.error('Błąd usuwania spotkania:', error);
