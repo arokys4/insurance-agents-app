@@ -23,15 +23,15 @@ interface Agent {
   styleUrl: './admin-agents.css'
 })
 export class AdminAgents implements OnInit {
-  private apiUrl = 'http://localhost:4000/api/agents';
+  private agentsApiUrl = 'http://localhost:4000/api/agents';
+
+  agents: Agent[] = [];
 
   showForm = false;
   editMode = false;
   editedAgentId: number | null = null;
 
   selectedAgent: Agent | null = null;
-
-  agents: Agent[] = [];
 
   agentForm: Agent = {
     firstName: '',
@@ -52,29 +52,31 @@ export class AdminAgents implements OnInit {
   }
 
   loadAgents(): void {
-    this.http.get<Agent[]>(this.apiUrl).subscribe({
+    this.http.get<Agent[]>(this.agentsApiUrl).subscribe({
       next: (agents) => {
         this.agents = agents.filter(agent => agent.role !== 'ADMIN');
       },
       error: (error) => {
         console.error('Błąd pobierania agentów:', error);
-        alert('Nie udało się pobrać listy agentów z serwera.');
+        alert('Nie udało się pobrać listy agentów.');
       }
     });
   }
 
   showAddAgentForm(): void {
     this.clearForm();
+    this.showForm = true;
     this.editMode = false;
     this.editedAgentId = null;
     this.selectedAgent = null;
-    this.showForm = true;
   }
 
   saveAgent(): void {
     if (!this.validateAgentForm()) {
       return;
     }
+
+    this.normalizeAgentForm();
 
     if (this.editMode && this.editedAgentId !== null) {
       this.updateAgent();
@@ -83,95 +85,101 @@ export class AdminAgents implements OnInit {
     }
   }
 
-  onPhoneInput(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const digitsOnly = input.value.replace(/\D/g, '').slice(0, 9);
+  validateAgentForm(): boolean {
+    const firstName = this.agentForm.firstName.trim();
+    const lastName = this.agentForm.lastName.trim();
+    const email = this.agentForm.email.trim();
+    const phone = this.agentForm.phone.trim();
+    const password = this.agentForm.password || '';
 
-  input.value = digitsOnly;
-  this.agentForm.phone = digitsOnly;
-}
+    if (!firstName || !lastName || !email || !phone || !this.agentForm.status) {
+      alert('Uzupełnij wszystkie wymagane pola.');
+      return false;
+    }
 
-formatFirstName(): void {
-  this.agentForm.firstName = this.formatName(this.agentForm.firstName);
-}
+    const nameRegex = /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż\s-]+$/;
 
-formatLastName(): void {
-  this.agentForm.lastName = this.formatName(this.agentForm.lastName);
-}
+    if (!nameRegex.test(firstName)) {
+      alert('Imię może zawierać tylko litery.');
+      return false;
+    }
 
-formatName(value: string): string {
-  const trimmedValue = value.trim().toLocaleLowerCase('pl-PL');
+    if (!nameRegex.test(lastName)) {
+      alert('Nazwisko może zawierać tylko litery.');
+      return false;
+    }
 
-  if (!trimmedValue) {
-    return '';
+    if (!email.includes('@')) {
+      alert('Podaj poprawny adres e-mail.');
+      return false;
+    }
+
+    const phoneRegex = /^[0-9]{9}$/;
+
+    if (!phoneRegex.test(phone)) {
+      alert('Telefon musi składać się dokładnie z 9 cyfr.');
+      return false;
+    }
+
+    if (!this.editMode && !password) {
+      alert('Podaj hasło startowe dla agenta.');
+      return false;
+    }
+
+    if (password) {
+      const passwordError = this.validatePasswordStrength(password);
+
+      if (passwordError) {
+        alert(passwordError);
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  return (
-    trimmedValue.charAt(0).toLocaleUpperCase('pl-PL') +
-    trimmedValue.slice(1)
-  );
-}
+  validatePasswordStrength(password: string): string | null {
+    if (!password || password.length < 8) {
+      return 'Hasło musi mieć co najmniej 8 znaków.';
+    }
 
-isOnlyLetters(value: string): boolean {
-  const lettersRegex = /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+$/;
-  return lettersRegex.test(value);
-}
+    if (!/[a-z]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną małą literę.';
+    }
 
-isValidEmail(value: string): boolean {
-  return value.includes('@');
-}
+    if (!/[A-Z]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną wielką literę.';
+    }
 
-validateAgentForm(): boolean {
-  this.agentForm.firstName = this.formatName(this.agentForm.firstName);
-  this.agentForm.lastName = this.formatName(this.agentForm.lastName);
-  this.agentForm.email = this.agentForm.email.trim();
-  this.agentForm.phone = this.agentForm.phone.replace(/\D/g, '').slice(0, 9);
+    if (!/[0-9]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jedną cyfrę.';
+    }
 
-  if (
-    !this.agentForm.firstName ||
-    !this.agentForm.lastName ||
-    !this.agentForm.email ||
-    !this.agentForm.phone
-  ) {
-    alert('Uzupełnij wszystkie pola formularza.');
-    return false;
+    if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]/.test(password)) {
+      return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
+    }
+
+    return null;
   }
 
-  if (!this.editMode && (!this.agentForm.password || this.agentForm.password.length < 6)) {
-    alert('Hasło startowe musi mieć co najmniej 6 znaków.');
-    return false;
+  normalizeAgentForm(): void {
+    this.agentForm.firstName = this.capitalizeText(this.agentForm.firstName.trim());
+    this.agentForm.lastName = this.capitalizeText(this.agentForm.lastName.trim());
+    this.agentForm.email = this.agentForm.email.trim().toLowerCase();
+    this.agentForm.phone = this.agentForm.phone.trim();
   }
 
-  if (this.editMode && this.agentForm.password && this.agentForm.password.length < 6) {
-    alert('Nowe hasło musi mieć co najmniej 6 znaków.');
-    return false;
+  capitalizeText(value: string): string {
+    return value
+      .toLowerCase()
+      .split(' ')
+      .filter(part => part.trim().length > 0)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
-
-  if (!this.isOnlyLetters(this.agentForm.firstName)) {
-    alert('Imię może zawierać tylko litery.');
-    return false;
-  }
-
-  if (!this.isOnlyLetters(this.agentForm.lastName)) {
-    alert('Nazwisko może zawierać tylko litery.');
-    return false;
-  }
-
-  if (!this.isValidEmail(this.agentForm.email)) {
-    alert('Adres e-mail musi zawierać znak @.');
-    return false;
-  }
-
-  if (this.agentForm.phone.length !== 9) {
-    alert('Numer telefonu musi składać się dokładnie z 9 cyfr.');
-    return false;
-  }
-
-  return true;
-}
 
   addAgent(): void {
-    this.http.post<Agent>(this.apiUrl, this.agentForm).subscribe({
+    this.http.post<Agent>(this.agentsApiUrl, this.agentForm).subscribe({
       next: () => {
         this.loadAgents();
         this.cancel();
@@ -188,7 +196,19 @@ validateAgentForm(): boolean {
   }
 
   updateAgent(): void {
-    this.http.put<Agent>(`${this.apiUrl}/${this.editedAgentId}`, this.agentForm).subscribe({
+    if (this.editedAgentId === null) {
+      return;
+    }
+
+    const payload: Agent = {
+      ...this.agentForm
+    };
+
+    if (!payload.password) {
+      delete payload.password;
+    }
+
+    this.http.put<Agent>(`${this.agentsApiUrl}/${this.editedAgentId}`, payload).subscribe({
       next: () => {
         this.loadAgents();
         this.cancel();
@@ -197,7 +217,7 @@ validateAgentForm(): boolean {
         console.error('Błąd edycji agenta:', error);
 
         const message =
-          error.error?.error || 'Nie udało się zaktualizować danych agenta.';
+          error.error?.error || 'Nie udało się zaktualizować agenta.';
 
         alert(message);
       }
@@ -235,61 +255,25 @@ validateAgentForm(): boolean {
     }
 
     const confirmDelete = confirm(
-      `Czy na pewno chcesz usunąć agenta ${agent.firstName} ${agent.lastName}?`
+      `Czy na pewno chcesz usunąć agenta "${agent.firstName} ${agent.lastName}"?`
     );
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.apiUrl}/${agent.id}`).subscribe({
+    this.http.delete(`${this.agentsApiUrl}/${agent.id}`).subscribe({
       next: () => {
         this.selectedAgent = null;
         this.loadAgents();
       },
       error: (error) => {
         console.error('Błąd usuwania agenta:', error);
-        alert('Nie udało się usunąć agenta.');
-      }
-    });
-  }
 
-  deactivateAgent(agent: Agent): void {
-    if (!agent.id) {
-      return;
-    }
+        const message =
+          error.error?.error || 'Nie udało się usunąć agenta.';
 
-    const confirmDeactivate = confirm('Czy na pewno chcesz dezaktywować tego agenta?');
-
-    if (!confirmDeactivate) {
-      return;
-    }
-
-    this.changeAgentStatus(agent.id, 'Nieaktywny');
-  }
-
-  activateAgent(agent: Agent): void {
-    if (!agent.id) {
-      return;
-    }
-
-    const confirmActivate = confirm('Czy na pewno chcesz ponownie aktywować tego agenta?');
-
-    if (!confirmActivate) {
-      return;
-    }
-
-    this.changeAgentStatus(agent.id, 'Aktywny');
-  }
-
-  changeAgentStatus(id: number, status: string): void {
-    this.http.patch<Agent>(`${this.apiUrl}/${id}/status`, { status }).subscribe({
-      next: () => {
-        this.loadAgents();
-      },
-      error: (error) => {
-        console.error('Błąd zmiany statusu agenta:', error);
-        alert('Nie udało się zmienić statusu agenta.');
+        alert(message);
       }
     });
   }

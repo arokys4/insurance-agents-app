@@ -1,69 +1,84 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 
-function formatName(value) {
-  const trimmedValue = value.trim().toLocaleLowerCase('pl-PL');
-
-  if (!trimmedValue) {
-    return '';
+function validatePasswordStrength(password) {
+  if (!password || password.length < 8) {
+    return 'Hasło musi mieć co najmniej 8 znaków.';
   }
 
-  return (
-    trimmedValue.charAt(0).toLocaleUpperCase('pl-PL') +
-    trimmedValue.slice(1)
-  );
+  if (!/[a-z]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną małą literę.';
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną wielką literę.';
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jedną cyfrę.';
+  }
+
+  if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]/.test(password)) {
+    return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
+  }
+
+  return null;
 }
 
-function isOnlyLetters(value) {
-  const lettersRegex = /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+$/;
-  return lettersRegex.test(value);
+function formatName(value) {
+  return value
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .filter(part => part.length > 0)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
-function isValidEmail(value) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(value);
-}
-
-function validateAgentData(data, requirePassword = false) {
-  const firstName = formatName(data.firstName || '');
-  const lastName = formatName(data.lastName || '');
+function validateAgentData(data, options = { requirePassword: false }) {
+  const firstName = (data.firstName || '').trim();
+  const lastName = (data.lastName || '').trim();
   const email = (data.email || '').trim().toLowerCase();
-  const phone = (data.phone || '').replace(/\D/g, '').slice(0, 9);
+  const phone = (data.phone || '').trim();
   const status = data.status || 'Aktywny';
   const password = data.password || '';
 
-  if (!firstName || !lastName || !email || !phone) {
+  if (!firstName || !lastName || !email || !phone || !status) {
     return {
       valid: false,
       error: 'Uzupełnij wszystkie wymagane pola.'
     };
   }
 
-  if (!isOnlyLetters(firstName)) {
+  const nameRegex = /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż\s-]+$/;
+
+  if (!nameRegex.test(firstName)) {
     return {
       valid: false,
       error: 'Imię może zawierać tylko litery.'
     };
   }
 
-  if (!isOnlyLetters(lastName)) {
+  if (!nameRegex.test(lastName)) {
     return {
       valid: false,
       error: 'Nazwisko może zawierać tylko litery.'
     };
   }
 
-  if (!isValidEmail(email)) {
+  if (!email.includes('@')) {
     return {
       valid: false,
-      error: 'Adres e-mail musi mieć poprawny format, np. jan.kowalski@firma.pl.'
+      error: 'Podaj poprawny adres e-mail.'
     };
   }
 
-  if (phone.length !== 9) {
+  const phoneRegex = /^[0-9]{9}$/;
+
+  if (!phoneRegex.test(phone)) {
     return {
       valid: false,
-      error: 'Numer telefonu musi składać się dokładnie z 9 cyfr.'
+      error: 'Telefon musi składać się dokładnie z 9 cyfr.'
     };
   }
 
@@ -74,25 +89,29 @@ function validateAgentData(data, requirePassword = false) {
     };
   }
 
-  if (requirePassword && password.length < 6) {
+  if (options.requirePassword && !password) {
     return {
       valid: false,
-      error: 'Hasło startowe musi mieć co najmniej 6 znaków.'
+      error: 'Podaj hasło startowe dla agenta.'
     };
   }
 
-  if (!requirePassword && password && password.length < 6) {
-    return {
-      valid: false,
-      error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
-    };
+  if (password) {
+    const passwordError = validatePasswordStrength(password);
+
+    if (passwordError) {
+      return {
+        valid: false,
+        error: passwordError
+      };
+    }
   }
 
   return {
     valid: true,
     agent: {
-      firstName,
-      lastName,
+      firstName: formatName(firstName),
+      lastName: formatName(lastName),
       email,
       phone,
       status,
@@ -107,7 +126,7 @@ function agentsRouter(db) {
   router.get('/', async (req, res) => {
     try {
       const agents = await db.all(`
-        SELECT 
+        SELECT
           id,
           first_name AS firstName,
           last_name AS lastName,
@@ -117,10 +136,16 @@ function agentsRouter(db) {
           role,
           must_change_password AS mustChangePassword
         FROM agents
-        ORDER BY id DESC
+        ORDER BY
+          CASE WHEN status = 'Aktywny' THEN 0 ELSE 1 END,
+          last_name ASC,
+          first_name ASC
       `);
 
-      res.json(agents);
+      res.json(agents.map(agent => ({
+        ...agent,
+        mustChangePassword: Boolean(agent.mustChangePassword)
+      })));
     } catch (error) {
       console.error('Błąd pobierania agentów:', error);
 
@@ -130,9 +155,51 @@ function agentsRouter(db) {
     }
   });
 
+  router.get('/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const agent = await db.get(
+        `
+        SELECT
+          id,
+          first_name AS firstName,
+          last_name AS lastName,
+          email,
+          phone,
+          status,
+          role,
+          must_change_password AS mustChangePassword
+        FROM agents
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+      if (!agent) {
+        return res.status(404).json({
+          error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      res.json({
+        ...agent,
+        mustChangePassword: Boolean(agent.mustChangePassword)
+      });
+    } catch (error) {
+      console.error('Błąd pobierania agenta:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się pobrać danych agenta.'
+      });
+    }
+  });
+
   router.post('/', async (req, res) => {
     try {
-      const validation = validateAgentData(req.body, true);
+      const validation = validateAgentData(req.body, {
+        requirePassword: true
+      });
 
       if (!validation.valid) {
         return res.status(400).json({
@@ -140,7 +207,30 @@ function agentsRouter(db) {
         });
       }
 
-      const { firstName, lastName, email, phone, status, password } = validation.agent;
+      const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        status,
+        password
+      } = validation.agent;
+
+      const existingAgent = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE email = ?
+        `,
+        [email]
+      );
+
+      if (existingAgent) {
+        return res.status(409).json({
+          error: 'Agent z takim adresem e-mail już istnieje.'
+        });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const result = await db.run(
@@ -151,8 +241,8 @@ function agentsRouter(db) {
           email,
           phone,
           status,
-          password,
           role,
+          password,
           must_change_password
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -163,15 +253,15 @@ function agentsRouter(db) {
           email,
           phone,
           status,
-          hashedPassword,
           'AGENT',
+          hashedPassword,
           1
         ]
       );
 
       const createdAgent = await db.get(
         `
-        SELECT 
+        SELECT
           id,
           first_name AS firstName,
           last_name AS lastName,
@@ -186,15 +276,12 @@ function agentsRouter(db) {
         [result.lastID]
       );
 
-      res.status(201).json(createdAgent);
+      res.status(201).json({
+        ...createdAgent,
+        mustChangePassword: Boolean(createdAgent.mustChangePassword)
+      });
     } catch (error) {
       console.error('Błąd dodawania agenta:', error);
-
-      if (error.code === 'SQLITE_CONSTRAINT') {
-        return res.status(409).json({
-          error: 'Agent z takim adresem e-mail już istnieje.'
-        });
-      }
 
       res.status(500).json({
         error: 'Nie udało się dodać agenta.'
@@ -206,7 +293,9 @@ function agentsRouter(db) {
     try {
       const { id } = req.params;
 
-      const validation = validateAgentData(req.body, false);
+      const validation = validateAgentData(req.body, {
+        requirePassword: false
+      });
 
       if (!validation.valid) {
         return res.status(400).json({
@@ -214,9 +303,7 @@ function agentsRouter(db) {
         });
       }
 
-      const { firstName, lastName, email, phone, status, password } = validation.agent;
-
-      const existingAgent = await db.get(
+      const agentExists = await db.get(
         `
         SELECT id, role
         FROM agents
@@ -225,9 +312,39 @@ function agentsRouter(db) {
         [id]
       );
 
-      if (!existingAgent) {
+      if (!agentExists) {
         return res.status(404).json({
           error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      if (agentExists.role === 'ADMIN') {
+        return res.status(403).json({
+          error: 'Nie można edytować konta administratora w module agentów.'
+        });
+      }
+
+      const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        status,
+        password
+      } = validation.agent;
+
+      const emailOwner = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE email = ? AND id != ?
+        `,
+        [email, id]
+      );
+
+      if (emailOwner) {
+        return res.status(409).json({
+          error: 'Inny agent używa już tego adresu e-mail.'
         });
       }
 
@@ -244,7 +361,7 @@ function agentsRouter(db) {
             phone = ?,
             status = ?,
             password = ?,
-            must_change_password = ?
+            must_change_password = 1
           WHERE id = ?
           `,
           [
@@ -254,7 +371,6 @@ function agentsRouter(db) {
             phone,
             status,
             hashedPassword,
-            1,
             id
           ]
         );
@@ -270,13 +386,20 @@ function agentsRouter(db) {
             status = ?
           WHERE id = ?
           `,
-          [firstName, lastName, email, phone, status, id]
+          [
+            firstName,
+            lastName,
+            email,
+            phone,
+            status,
+            id
+          ]
         );
       }
 
       const updatedAgent = await db.get(
         `
-        SELECT 
+        SELECT
           id,
           first_name AS firstName,
           last_name AS lastName,
@@ -291,80 +414,15 @@ function agentsRouter(db) {
         [id]
       );
 
-      res.json(updatedAgent);
+      res.json({
+        ...updatedAgent,
+        mustChangePassword: Boolean(updatedAgent.mustChangePassword)
+      });
     } catch (error) {
       console.error('Błąd edycji agenta:', error);
 
-      if (error.code === 'SQLITE_CONSTRAINT') {
-        return res.status(409).json({
-          error: 'Agent z takim adresem e-mail już istnieje.'
-        });
-      }
-
       res.status(500).json({
         error: 'Nie udało się zaktualizować agenta.'
-      });
-    }
-  });
-
-  router.patch('/:id/status', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      if (status !== 'Aktywny' && status !== 'Nieaktywny') {
-        return res.status(400).json({
-          error: 'Nieprawidłowy status agenta.'
-        });
-      }
-
-      const existingAgent = await db.get(
-        `
-        SELECT id
-        FROM agents
-        WHERE id = ?
-        `,
-        [id]
-      );
-
-      if (!existingAgent) {
-        return res.status(404).json({
-          error: 'Nie znaleziono agenta.'
-        });
-      }
-
-      await db.run(
-        `
-        UPDATE agents
-        SET status = ?
-        WHERE id = ?
-        `,
-        [status, id]
-      );
-
-      const updatedAgent = await db.get(
-        `
-        SELECT 
-          id,
-          first_name AS firstName,
-          last_name AS lastName,
-          email,
-          phone,
-          status,
-          role,
-          must_change_password AS mustChangePassword
-        FROM agents
-        WHERE id = ?
-        `,
-        [id]
-      );
-
-      res.json(updatedAgent);
-    } catch (error) {
-      console.error('Błąd zmiany statusu agenta:', error);
-
-      res.status(500).json({
-        error: 'Nie udało się zmienić statusu agenta.'
       });
     }
   });
@@ -375,7 +433,7 @@ function agentsRouter(db) {
 
       const agent = await db.get(
         `
-        SELECT id, role
+        SELECT id, first_name AS firstName, last_name AS lastName, role
         FROM agents
         WHERE id = ?
         `,
@@ -394,6 +452,36 @@ function agentsRouter(db) {
         });
       }
 
+      const assignedMeetings = await db.get(
+        `
+        SELECT COUNT(*) AS count
+        FROM meetings
+        WHERE agent_id = ?
+        `,
+        [id]
+      );
+
+      if (assignedMeetings.count > 0) {
+        return res.status(409).json({
+          error: 'Nie można usunąć agenta, który ma przypisane spotkania.'
+        });
+      }
+
+      const workTimeEntries = await db.get(
+        `
+        SELECT COUNT(*) AS count
+        FROM work_time_entries
+        WHERE agent_id = ?
+        `,
+        [id]
+      );
+
+      if (workTimeEntries.count > 0) {
+        return res.status(409).json({
+          error: 'Nie można usunąć agenta, który ma wpisy czasu pracy.'
+        });
+      }
+
       await db.run(
         `
         DELETE FROM agents
@@ -403,7 +491,7 @@ function agentsRouter(db) {
       );
 
       res.json({
-        message: 'Agent został usunięty.'
+        message: `Agent ${agent.firstName} ${agent.lastName} został usunięty.`
       });
     } catch (error) {
       console.error('Błąd usuwania agenta:', error);

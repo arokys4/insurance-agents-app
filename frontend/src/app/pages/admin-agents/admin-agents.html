@@ -2,23 +2,25 @@
   <header class="header">
     <div>
       <h1>Agenci</h1>
-      <p>Lista agentów ubezpieczeniowych dostępnych w systemie</p>
+      <p>Lista agentów ubezpieczeniowych dostępnych w systemie.</p>
     </div>
 
-    <button type="button" class="secondary-button" (click)="goBack()">     
-      Powrót  
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
     </button>
   </header>
 
   <section class="toolbar">
-    <button type="button" (click)="showAddAgentForm()">Dodaj agenta</button>
+    <button type="button" (click)="showAddAgentForm()">
+      Dodaj agenta
+    </button>
   </section>
 
   <section class="details-card" *ngIf="selectedAgent">
     <div class="details-header">
       <div>
         <h2>Szczegóły agenta</h2>
-        <p>{{ selectedAgent.firstName }} {{ selectedAgent.lastName }}</p>
+        <p>Dane wybranego agenta ubezpieczeniowego.</p>
       </div>
 
       <button type="button" class="secondary-button" (click)="closeDetails()">
@@ -27,28 +29,28 @@
     </div>
 
     <div class="details-grid">
-      <div>
-        <strong>Imię:</strong>
+      <div class="details-item">
+        <strong>Imię</strong>
         <span>{{ selectedAgent.firstName }}</span>
       </div>
 
-      <div>
-        <strong>Nazwisko:</strong>
+      <div class="details-item">
+        <strong>Nazwisko</strong>
         <span>{{ selectedAgent.lastName }}</span>
       </div>
 
-      <div>
-        <strong>E-mail:</strong>
+      <div class="details-item">
+        <strong>E-mail</strong>
         <span>{{ selectedAgent.email }}</span>
       </div>
 
-      <div>
-        <strong>Telefon:</strong>
+      <div class="details-item">
+        <strong>Telefon</strong>
         <span>{{ selectedAgent.phone }}</span>
       </div>
 
-      <div>
-        <strong>Status:</strong>
+      <div class="details-item">
+        <strong>Status</strong>
         <span>{{ selectedAgent.status }}</span>
       </div>
     </div>
@@ -126,13 +128,18 @@
             name="password"
             type="password"
             [(ngModel)]="agentForm.password"
-            [placeholder]="editMode ? 'Zostaw puste, jeśli nie zmieniasz hasła' : 'Minimum 6 znaków'"
+            [placeholder]="editMode ? 'Zostaw puste, jeśli nie zmieniasz hasła' : 'np. Agent@123'"
           />
+
+          <p class="password-hint">
+            Hasło musi mieć minimum 8 znaków, małą literę, wielką literę, cyfrę i znak specjalny.
+          </p>
         </div>
       </div>
 
       <p class="form-hint" *ngIf="!editMode">
-        Hasło startowe zostanie użyte przez agenta przy pierwszym logowaniu. Po zalogowaniu agent zostanie poproszony o ustawienie własnego hasła.
+        Hasło startowe zostanie użyte przez agenta przy pierwszym logowaniu.
+        Po zalogowaniu agent zostanie poproszony o ustawienie własnego hasła.
       </p>
 
       <p class="form-hint" *ngIf="editMode">
@@ -149,13 +156,16 @@
         </button>
       </div>
     </form>
-</section>
+  </section>
 
   <section class="agents-table">
-    <table>
+    <h2>Lista agentów</h2>
+
+    <table *ngIf="agents.length > 0">
       <thead>
         <tr>
-          <th>Imię i nazwisko</th>
+          <th>Imię</th>
+          <th>Nazwisko</th>
           <th>E-mail</th>
           <th>Telefon</th>
           <th>Status</th>
@@ -165,33 +175,26 @@
 
       <tbody>
         <tr *ngFor="let agent of agents">
-          <td>{{ agent.firstName }} {{ agent.lastName }}</td>
+          <td>
+            <span
+              class="status-dot"
+              [class.active-dot]="agent.status === 'Aktywny'"
+              [class.inactive-dot]="agent.status === 'Nieaktywny'"
+            ></span>
+
+            {{ agent.firstName }}
+          </td>
+          <td>{{ agent.lastName }}</td>
           <td>{{ agent.email }}</td>
           <td>{{ agent.phone }}</td>
           <td>{{ agent.status }}</td>
           <td>
-            <button type="button" (click)="editAgent(agent)">Edytuj</button>
+            <button type="button" (click)="editAgent(agent)">
+              Edytuj
+            </button>
 
             <button type="button" (click)="showDetails(agent)">
               Szczegóły
-            </button>
-
-            <button
-              type="button"
-              class="danger-button"
-              *ngIf="agent.status === 'Aktywny' || agent.status === 'Aktywna'"
-              (click)="deactivateAgent(agent)"
-            >
-              Dezaktywuj
-            </button>
-
-            <button
-              type="button"
-              class="success-button"
-              *ngIf="agent.status === 'Nieaktywny'"
-              (click)="activateAgent(agent)"
-            >
-              Aktywuj
             </button>
 
             <button
@@ -205,5 +208,9 @@
         </tr>
       </tbody>
     </table>
+
+    <p class="empty-message" *ngIf="agents.length === 0">
+      Brak agentów w systemie.
+    </p>
   </section>
 </div>
