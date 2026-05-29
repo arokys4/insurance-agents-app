@@ -15,13 +15,6 @@ interface Meeting {
   agentName?: string;
 }
 
-interface CalendarDay {
-  date: Date;
-  dateKey: string;
-  dayName: string;
-  dayNumber: number;
-}
-
 interface MeetingNote {
   id?: number;
   meetingId: number;
@@ -40,6 +33,13 @@ interface MeetingAttachment {
   uploadedAt?: string;
 }
 
+interface CalendarDay {
+  date: Date;
+  dateKey: string;
+  dayName: string;
+  dayNumber: number;
+}
+
 @Component({
   selector: 'app-admin-calendar',
   imports: [NgFor, NgIf],
@@ -50,7 +50,7 @@ export class AdminCalendar implements OnInit {
   private meetingsApiUrl = 'http://localhost:4000/api/meetings';
   private notesApiUrl = 'http://localhost:4000/api/meeting-notes';
   private attachmentsApiUrl = 'http://localhost:4000/api/meeting-attachments';
-  private backendUrl = 'http://localhost:4000'
+  private backendUrl = 'http://localhost:4000';
 
   meetings: Meeting[] = [];
   weekDays: CalendarDay[] = [];
@@ -118,7 +118,6 @@ export class AdminCalendar implements OnInit {
   getStartOfWeek(date: Date): Date {
     const result = new Date(date);
     const day = result.getDay();
-
     const difference = day === 0 ? -6 : 1 - day;
 
     result.setDate(result.getDate() + difference);
@@ -188,42 +187,6 @@ export class AdminCalendar implements OnInit {
     return day.dateKey === this.getDateKey(new Date());
   }
 
-  formatTime(value: string): string {
-    return new Date(value).toLocaleTimeString('pl-PL', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  formatDate(value: string): string {
-    if (!value) {
-      return '';
-    }
-
-    return new Date(value).toLocaleString('pl-PL');
-  }
-
-  formatMeetingTime(meeting: Meeting): string {
-    return `${this.formatTime(meeting.startDate)} - ${this.formatTime(meeting.endDate)}`;
-  }
-
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'Zaplanowane':
-        return 'status-planned';
-      case 'W realizacji':
-        return 'status-progress';
-      case 'Zakończone':
-        return 'status-completed';
-      case 'Przełożone':
-        return 'status-postponed';
-      case 'Anulowane':
-        return 'status-cancelled';
-      default:
-        return 'status-default';
-    }
-  }
-
   showMeetingDetails(meeting: Meeting): void {
     this.selectedMeeting = meeting;
     this.meetingNotes = [];
@@ -241,7 +204,7 @@ export class AdminCalendar implements OnInit {
     this.meetingAttachments = [];
   }
 
-    loadMeetingNotes(meetingId: number): void {
+  loadMeetingNotes(meetingId: number): void {
     this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
       next: (notes) => {
         this.meetingNotes = notes;
@@ -269,6 +232,25 @@ export class AdminCalendar implements OnInit {
     return `${this.backendUrl}${attachment.filePath}`;
   }
 
+  formatTime(value: string): string {
+    return new Date(value).toLocaleTimeString('pl-PL', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  formatMeetingTime(meeting: Meeting): string {
+    return `${this.formatTime(meeting.startDate)} - ${this.formatTime(meeting.endDate)}`;
+  }
+
+  formatDate(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    return new Date(value).toLocaleString('pl-PL');
+  }
+
   formatDateTime(value?: string): string {
     if (!value) {
       return '-';
@@ -277,11 +259,24 @@ export class AdminCalendar implements OnInit {
     return new Date(value).toLocaleString('pl-PL');
   }
 
-  goBack(): void {
-    this.router.navigate(['/admin']);
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'Zaplanowane':
+        return 'status-planned';
+      case 'W realizacji':
+        return 'status-progress';
+      case 'Zakończone':
+        return 'status-completed';
+      case 'Przełożone':
+        return 'status-postponed';
+      case 'Anulowane':
+        return 'status-cancelled';
+      default:
+        return 'status-default';
+    }
   }
 
-  goToMeetings(): void {
-    this.router.navigate(['/admin/meetings']);
+  goBack(): void {
+    this.router.navigate(['/admin']);
   }
 }

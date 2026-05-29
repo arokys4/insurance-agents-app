@@ -43,6 +43,8 @@ button:hover {
   background: #5a6268;
 }
 
+/* Menu główne */
+
 .cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -56,7 +58,7 @@ button:hover {
   border-radius: 10px;
   border: 1px solid transparent;
   border-left: 5px solid #198754;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-weight: bold;
   color: #198754;
   cursor: pointer;
@@ -68,12 +70,85 @@ button:hover {
   transform: translateY(-3px);
   border: 1px solid #198754;
   border-left: 5px solid #198754;
-  box-shadow: 0 6px 16px rgba(25, 135, 84, 0.25);
+  box-shadow: 0 6px 16px rgba(25, 135, 84, 0.22);
   background: #f8fbf9;
 }
 
+/* Kompaktowe podsumowanie */
+
+.compact-summary {
+  background: white;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-top: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.summary-title {
+  border-right: 1px solid #e0e4ea;
+  padding-right: 24px;
+}
+
+.summary-title h2 {
+  margin: 0 0 6px 0;
+  color: #198754;
+}
+
+.summary-title p {
+  margin: 0;
+  color: #555;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.stat-item {
+  background: #f8fbf9;
+  border: 1px solid #d9e8df;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.stat-item span {
+  display: block;
+  color: #198754;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.stat-item strong {
+  display: block;
+  color: #222;
+  font-size: 24px;
+}
+
+/* Responsywność */
+
 @media (max-width: 1100px) {
   .cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .compact-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-title {
+    border-right: none;
+    border-bottom: 1px solid #e0e4ea;
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+
+  .summary-stats {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -89,7 +164,8 @@ button:hover {
     gap: 16px;
   }
 
-  .cards {
+  .cards,
+  .summary-stats {
     grid-template-columns: 1fr;
   }
 

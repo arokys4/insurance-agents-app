@@ -73,7 +73,7 @@
     <p>Nie masz jeszcze przypisanych spotkań w systemie.</p>
   </section>
 
-  <div class="modal-backdrop" *ngIf="selectedMeeting">
+  <div class="modal-backdrop" *ngIf="selectedMeeting as meeting">
     <div class="meeting-modal">
       <div class="modal-header">
         <div>
@@ -85,32 +85,32 @@
       <div class="modal-content">
         <div class="detail-item">
           <strong>Tytuł</strong>
-          <span>{{ selectedMeeting.title }}</span>
+          <span>{{ meeting.title }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Typ spotkania</strong>
-          <span>{{ selectedMeeting.meetingType }}</span>
+          <span>{{ meeting.meetingType }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Status</strong>
-          <span>{{ selectedMeeting.status }}</span>
+          <span>{{ meeting.status }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Rozpoczęcie</strong>
-          <span>{{ formatDate(selectedMeeting.startDate) }}</span>
+          <span>{{ formatDate(meeting.startDate) }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Zakończenie</strong>
-          <span>{{ formatDate(selectedMeeting.endDate) }}</span>
+          <span>{{ formatDate(meeting.endDate) }}</span>
         </div>
 
         <div class="detail-item full-width">
           <strong>Opis</strong>
-          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+          <span>{{ meeting.description || 'Brak opisu' }}</span>
         </div>
       </div>
 

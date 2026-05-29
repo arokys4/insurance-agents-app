@@ -1,16 +1,16 @@
 <div class="page">
-  <header class="header">
+    <header class="header">
     <div>
-      <h1>Dokumentacja</h1>
-      <p *ngIf="user">
-        Dokumentacja spotkań agenta: {{ user.firstName }} {{ user.lastName }}
-      </p>
+        <h1>Dokumentacja spotkań</h1>
+        <p *ngIf="user">
+        Notatki i załączniki spotkań agenta: {{ user.firstName }} {{ user.lastName }}
+        </p>
     </div>
 
     <button type="button" class="secondary-button" (click)="goBack()">
-      Powrót
+        Powrót
     </button>
-  </header>
+    </header>
 
     <section class="summary-grid">
         <div class="summary-card">

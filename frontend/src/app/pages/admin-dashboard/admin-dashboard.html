@@ -1,8 +1,10 @@
 <div class="page">
   <header class="header">
     <div>
-      <h1>Panel szefa</h1>
-      <p>Zalogowano jako administrator systemu.</p>
+      <h1>Panel administratora</h1>
+      <p>
+        Zalogowano jako: {{ getLoggedUserName() }}
+      </p>
     </div>
 
     <button type="button" class="secondary-button" (click)="logout()">
@@ -25,6 +27,35 @@
 
     <div class="card" (click)="goToWorkTime()">
       Ewidencja czasu pracy
+    </div>
+  </section>
+
+  <section class="compact-summary">
+    <div class="summary-title">
+      <h2>Podsumowanie</h2>
+      <p>Aktualny stan systemu</p>
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat-item">
+        <span>Aktywni agenci</span>
+        <strong>{{ activeAgentsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Spotkania</span>
+        <strong>{{ meetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Zaplanowane</span>
+        <strong>{{ plannedMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Wpisy czasu pracy</span>
+        <strong>{{ workTimeEntriesCount }}</strong>
+      </div>
     </div>
   </section>
 </div>

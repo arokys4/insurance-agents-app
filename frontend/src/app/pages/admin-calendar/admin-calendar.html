@@ -1,14 +1,13 @@
 <div class="page">
   <header class="header">
     <div>
-      <h1>Kalendarz spotkań</h1>
-      <p>Tygodniowy harmonogram pracy agentów ubezpieczeniowych.</p>
+      <h1>Kalendarz</h1>
+      <p>Harmonogram spotkań wszystkich agentów.</p>
     </div>
 
-    <div class="header-actions">
-      <button type="button" (click)="goToMeetings()">Spotkania</button>
-      <button type="button" class="secondary-button" (click)="goBack()">Powrót</button>
-    </div>
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
+    </button>
   </header>
 
   <section class="calendar-toolbar">
@@ -16,7 +15,7 @@
 
     <div class="week-title">
       <h2>{{ getWeekLabel() }}</h2>
-      <p>Liczba spotkań w systemie: {{ meetings.length }}</p>
+      <p>Liczba spotkań: {{ meetings.length }}</p>
     </div>
 
     <button type="button" (click)="nextWeek()">Następny tydzień ›</button>
@@ -73,55 +72,52 @@
 
   <section class="empty-card" *ngIf="meetings.length === 0">
     <h2>Brak spotkań</h2>
-    <p>Dodaj spotkanie w module spotkań, aby pojawiło się w kalendarzu.</p>
-    <button type="button" (click)="goToMeetings()">Przejdź do spotkań</button>
+    <p>Nie ma jeszcze spotkań zapisanych w systemie.</p>
   </section>
 
-    <div class="modal-backdrop" *ngIf="selectedMeeting">
+  <div class="modal-backdrop" *ngIf="selectedMeeting as meeting">
     <div class="meeting-modal">
       <div class="modal-header">
         <div>
           <h2>Szczegóły spotkania</h2>
-          <p>Podgląd spotkania z kalendarza.</p>
+          <p>Podgląd spotkania z kalendarza administratora.</p>
         </div>
-
-
       </div>
 
       <div class="modal-content">
         <div class="detail-item">
           <strong>Tytuł</strong>
-          <span>{{ selectedMeeting.title }}</span>
+          <span>{{ meeting.title }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Typ spotkania</strong>
-          <span>{{ selectedMeeting.meetingType }}</span>
+          <span>{{ meeting.meetingType }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Agent</strong>
-          <span>{{ selectedMeeting.agentName }}</span>
+          <span>{{ meeting.agentName }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Status</strong>
-          <span>{{ selectedMeeting.status }}</span>
+          <span>{{ meeting.status }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Rozpoczęcie</strong>
-          <span>{{ formatMeetingTime(selectedMeeting).split(' - ')[0] }}</span>
+          <span>{{ formatDate(meeting.startDate) }}</span>
         </div>
 
         <div class="detail-item">
           <strong>Zakończenie</strong>
-          <span>{{ formatMeetingTime(selectedMeeting).split(' - ')[1] }}</span>
+          <span>{{ formatDate(meeting.endDate) }}</span>
         </div>
 
         <div class="detail-item full-width">
           <strong>Opis</strong>
-          <span>{{ selectedMeeting.description || 'Brak opisu' }}</span>
+          <span>{{ meeting.description || 'Brak opisu' }}</span>
         </div>
       </div>
 
@@ -131,10 +127,7 @@
 
           <div class="modal-note-card" *ngFor="let note of meetingNotes">
             <p>{{ note.content }}</p>
-
-            <span>
-              Dodano: {{ formatDateTime(note.createdAt) }}
-            </span>
+            <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
           </div>
 
           <p class="modal-empty-message" *ngIf="meetingNotes.length === 0">
@@ -171,10 +164,6 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" (click)="goToMeetings()">
-          Przejdź do modułu spotkań
-        </button>
-
         <button type="button" class="secondary-button" (click)="closeMeetingDetails()">
           Zamknij
         </button>
