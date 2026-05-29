@@ -79,6 +79,40 @@ function validateMeetingData(data) {
 function meetingsRouter(db) {
   const router = express.Router();
 
+  router.get('/agent/:agentId', async (req, res) => {
+    try {
+      const { agentId } = req.params;
+
+      const meetings = await db.all(
+        `
+        SELECT
+          meetings.id,
+          meetings.title,
+          meetings.description,
+          meetings.meeting_type AS meetingType,
+          meetings.start_date AS startDate,
+          meetings.end_date AS endDate,
+          meetings.status,
+          meetings.agent_id AS agentId,
+          agents.first_name || ' ' || agents.last_name AS agentName
+        FROM meetings
+        JOIN agents ON agents.id = meetings.agent_id
+        WHERE meetings.agent_id = ?
+        ORDER BY meetings.start_date ASC
+        `,
+        [agentId]
+      );
+
+      res.json(meetings);
+    } catch (error) {
+      console.error('Błąd pobierania spotkań agenta:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się pobrać spotkań agenta.'
+      });
+    }
+  });
+
   router.get('/', async (req, res) => {
     try {
       const meetings = await db.all(`

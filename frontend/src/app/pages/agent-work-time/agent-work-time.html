@@ -1,0 +1,173 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Czas pracy</h1>
+      <p *ngIf="user">
+        Ewidencja czasu pracy agenta: {{ user.firstName }} {{ user.lastName }}
+      </p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
+    </button>
+  </header>
+
+  <section class="summary-grid">
+    <div class="summary-card">
+      <h2>Podsumowanie</h2>
+      <p>Liczba wpisów: {{ entries.length }}</p>
+      <p>Łączna liczba godzin: {{ getTotalHours() }}</p>
+    </div>
+
+    <div class="summary-card">
+      <h2>Nowy wpis</h2>
+      <p>Dodaj czas pracy związany ze spotkaniami, dokumentacją lub obsługą klientów.</p>
+      <button type="button" (click)="showAddEntryForm()">Dodaj wpis</button>
+    </div>
+  </section>
+
+  <section class="details-card" *ngIf="selectedEntry">
+    <div class="details-header">
+      <div>
+        <h2>Szczegóły wpisu</h2>
+        <p>Podgląd wybranego wpisu czasu pracy.</p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="closeDetails()">
+        Zamknij
+      </button>
+    </div>
+
+    <div class="details-grid">
+      <div class="details-item">
+        <strong>Data</strong>
+        <span>{{ formatDate(selectedEntry.workDate) }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Od</strong>
+        <span>{{ selectedEntry.startTime }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Do</strong>
+        <span>{{ selectedEntry.endTime }}</span>
+      </div>
+
+      <div class="details-item">
+        <strong>Liczba godzin</strong>
+        <span>{{ formatHours(selectedEntry.durationHours) }}</span>
+      </div>
+
+      <div class="details-item full-width">
+        <strong>Opis</strong>
+        <span>{{ selectedEntry.description || 'Brak opisu' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-card" *ngIf="showForm">
+    <h2>{{ editMode ? 'Edycja wpisu czasu pracy' : 'Dodawanie wpisu czasu pracy' }}</h2>
+
+    <form (ngSubmit)="saveEntry()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="workDate">Data pracy</label>
+          <input
+            id="workDate"
+            name="workDate"
+            type="date"
+            [(ngModel)]="entryForm.workDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="startTime">Godzina rozpoczęcia</label>
+          <input
+            id="startTime"
+            name="startTime"
+            type="time"
+            [(ngModel)]="entryForm.startTime"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="endTime">Godzina zakończenia</label>
+          <input
+            id="endTime"
+            name="endTime"
+            type="time"
+            [(ngModel)]="entryForm.endTime"
+          />
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Opis pracy</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            [(ngModel)]="entryForm.description"
+            placeholder="np. Spotkania z klientami, oględziny szkody, uzupełnienie dokumentacji"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          {{ editMode ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancel()">
+          Anuluj
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="work-time-table">
+    <h2>Moje wpisy czasu pracy</h2>
+
+    <table *ngIf="entries.length > 0">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Od</th>
+          <th>Do</th>
+          <th>Liczba godzin</th>
+          <th>Opis</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let entry of entries">
+          <td>{{ formatDate(entry.workDate) }}</td>
+          <td>{{ entry.startTime }}</td>
+          <td>{{ entry.endTime }}</td>
+          <td>{{ formatHours(entry.durationHours) }}</td>
+          <td>{{ entry.description || '-' }}</td>
+          <td>
+            <button type="button" (click)="editEntry(entry)">Edytuj</button>
+
+            <button type="button" (click)="showDetails(entry)">
+              Szczegóły
+            </button>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteEntry(entry)"
+            >
+              Usuń
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="empty-message" *ngIf="entries.length === 0">
+      Nie dodałeś jeszcze żadnych wpisów czasu pracy.
+    </p>
+  </section>
+</div>

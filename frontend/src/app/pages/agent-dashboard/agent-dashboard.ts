@@ -383,6 +383,10 @@ export class AgentDashboard implements OnInit {
     this.router.navigate(['/agent/calendar']);
   }
   
+  goToWorkTime(): void {
+    this.router.navigate(['/agent/work-time']);
+  }
+
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

@@ -49,6 +49,49 @@ function validateWorkTimeData(data) {
 function workTimeRouter(db) {
   const router = express.Router();
 
+    router.get('/agent/:agentId', async (req, res) => {
+      try {
+        const { agentId } = req.params;
+
+        const entries = await db.all(
+          `
+          SELECT
+            work_time_entries.id,
+            work_time_entries.agent_id AS agentId,
+            agents.first_name || ' ' || agents.last_name AS agentName,
+            work_time_entries.work_date AS workDate,
+            work_time_entries.start_time AS startTime,
+            work_time_entries.end_time AS endTime,
+            work_time_entries.description
+          FROM work_time_entries
+          JOIN agents ON agents.id = work_time_entries.agent_id
+          WHERE work_time_entries.agent_id = ?
+          ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time ASC
+          `,
+          [agentId]
+        );
+
+        const entriesWithDuration = entries.map((entry) => {
+          const start = new Date(`${entry.workDate}T${entry.startTime}`);
+          const end = new Date(`${entry.workDate}T${entry.endTime}`);
+          const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+          return {
+            ...entry,
+            durationHours
+          };
+        });
+
+        res.json(entriesWithDuration);
+      } catch (error) {
+        console.error('Błąd pobierania czasu pracy agenta:', error);
+
+        res.status(500).json({
+          error: 'Nie udało się pobrać czasu pracy agenta.'
+        });
+      }
+    });
+
   router.get('/', async (req, res) => {
     try {
       const entries = await db.all(`

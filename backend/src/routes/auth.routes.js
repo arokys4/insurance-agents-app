@@ -77,60 +77,60 @@ function authRouter(db) {
     }
   });
 
-    router.patch('/change-password', async (req, res) => {
-        try {
-        const userId = Number(req.body.userId);
-        const newPassword = req.body.newPassword || '';
+  router.patch('/change-password', async (req, res) => {
+    try {
+      const userId = Number(req.body.userId);
+      const newPassword = req.body.newPassword || '';
 
-        if (!userId || !newPassword) {
-            return res.status(400).json({
-            error: 'Podaj identyfikator użytkownika i nowe hasło.'
-            });
-        }
-
-        if (newPassword.length < 6) {
-            return res.status(400).json({
-            error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
-            });
-        }
-
-        const user = await db.get(
-            `
-            SELECT id
-            FROM agents
-            WHERE id = ?
-            `,
-            [userId]
-        );
-
-        if (!user) {
-            return res.status(404).json({
-            error: 'Nie znaleziono użytkownika.'
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        await db.run(
-            `
-            UPDATE agents
-            SET password = ?, must_change_password = 0
-            WHERE id = ?
-            `,
-            [hashedPassword, userId]
-        );
-
-        res.json({
-            message: 'Hasło zostało zmienione.'
+      if (!userId || !newPassword) {
+        return res.status(400).json({
+          error: 'Podaj identyfikator użytkownika i nowe hasło.'
         });
-        } catch (error) {
-        console.error('Błąd zmiany hasła:', error);
+      }
 
-        res.status(500).json({
-            error: 'Nie udało się zmienić hasła.'
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          error: 'Nowe hasło musi mieć co najmniej 6 znaków.'
         });
-        }
-    });
+      }
+
+      const user = await db.get(
+        `
+        SELECT id
+        FROM agents
+        WHERE id = ?
+        `,
+        [userId]
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          error: 'Nie znaleziono użytkownika.'
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await db.run(
+        `
+        UPDATE agents
+        SET password = ?, must_change_password = 0
+        WHERE id = ?
+        `,
+        [hashedPassword, userId]
+      );
+
+      res.json({
+        message: 'Hasło zostało zmienione.'
+      });
+    } catch (error) {
+      console.error('Błąd zmiany hasła:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się zmienić hasła.'
+      });
+    }
+  });
 
   return router;
 }

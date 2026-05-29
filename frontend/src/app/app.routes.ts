@@ -9,6 +9,7 @@ import { AdminCalendar } from './pages/admin-calendar/admin-calendar';
 import { AdminWorkTime } from './pages/admin-work-time/admin-work-time';
 import { ChangePassword } from './pages/change-password/change-password';
 import { AgentCalendar } from './pages/agent-calendar/agent-calendar';
+import { AgentWorkTime } from './pages/agent-work-time/agent-work-time';
 
 
 export const routes: Routes = [
@@ -51,6 +52,11 @@ export const routes: Routes = [
   canActivate: [agentGuard]
   },
   {
+    path: 'agent/work-time',
+    component: AgentWorkTime,
+    canActivate: [agentGuard]
+  },
+  {
     path: 'admin/calendar',
     component: AdminCalendar,
     canActivate: [adminGuard]
@@ -64,5 +70,6 @@ export const routes: Routes = [
     path: '**',
     redirectTo: 'login'
   },
+
 
 ];
