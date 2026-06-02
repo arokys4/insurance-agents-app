@@ -1,23 +1,101 @@
 <div class="page">
-    <header class="header">
+  <header class="header">
     <div>
-        <h1>Dokumentacja spotkań</h1>
-        <p *ngIf="user">
-        Notatki i załączniki spotkań agenta: {{ user.firstName }} {{ user.lastName }}
-        </p>
+      <h1>Dokumentacja</h1>
+      <p *ngIf="user">
+        Dokumentacja spotkań agenta: {{ user.firstName }} {{ user.lastName }}
+      </p>
     </div>
 
     <button type="button" class="secondary-button" (click)="goBack()">
-        Powrót
+      Powrót
     </button>
-    </header>
+  </header>
 
-    <section class="summary-grid">
-        <div class="summary-card">
-            <h2>Podsumowanie</h2>
-            <p>Liczba spotkań: {{ meetings.length }}</p>
-        </div>
-    </section>
+  <section class="summary-grid">
+    <div class="summary-card">
+      <h2>Podsumowanie</h2>
+      <p>Liczba spotkań: {{ meetings.length }}</p>
+      <p>Widoczne wyniki: {{ filteredMeetings.length }}</p>
+    </div>
+
+    <div class="summary-card">
+      <h2>Dokumentacja spotkań</h2>
+      <p>
+        Notatki i załączniki są pobierane dopiero po wybraniu konkretnego spotkania.
+      </p>
+    </div>
+  </section>
+
+  <section class="documents-table">
+    <div class="table-header">
+      <div>
+        <h2>Lista spotkań</h2>
+        <p>
+          Wyszukuj dokumentację po tytule, typie, statusie, opisie lub terminie spotkania.
+        </p>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="documentSearchText"
+          placeholder="Szukaj dokumentacji..."
+        />
+
+        <button
+          type="button"
+          class="secondary-button"
+          *ngIf="documentSearchText"
+          (click)="clearDocumentSearch()"
+        >
+          Wyczyść
+        </button>
+      </div>
+    </div>
+
+    <div class="table-scroll" *ngIf="filteredMeetings.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Tytuł</th>
+            <th>Typ</th>
+            <th>Status</th>
+            <th>Termin</th>
+            <th>Opis</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let meeting of filteredMeetings">
+            <td>{{ meeting.title }}</td>
+            <td>{{ meeting.meetingType }}</td>
+            <td>{{ meeting.status }}</td>
+            <td>
+              {{ formatDate(meeting.startDate) }}
+              <br />
+              do {{ formatDate(meeting.endDate) }}
+            </td>
+            <td>{{ meeting.description || 'Brak opisu' }}</td>
+            <td>
+              <button type="button" (click)="showDetails(meeting)">
+                Szczegóły
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty-message" *ngIf="meetings.length === 0">
+      Brak spotkań do wyświetlenia.
+    </p>
+
+    <p class="empty-message" *ngIf="meetings.length > 0 && filteredMeetings.length === 0">
+      Brak dokumentacji pasującej do wyszukiwania.
+    </p>
+  </section>
 
   <section class="details-card" *ngIf="selectedMeeting as meeting">
     <div class="details-header">
@@ -58,13 +136,21 @@
       </div>
     </div>
 
-    <div class="documents-grid">
-      <div class="document-section">
+    <div class="details-extra-grid">
+      <div class="notes-section">
         <h3>Notatki</h3>
 
-        <div class="document-card" *ngFor="let note of meetingNotes">
-          <p>{{ note.content }}</p>
-          <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
+        <div class="notes-list" *ngIf="meetingNotes.length > 0">
+          <div class="note-card" *ngFor="let note of meetingNotes">
+            <p class="note-content">{{ note.content }}</p>
+
+            <div class="note-meta">
+              <span>Dodano: {{ formatDateTime(note.createdAt) }}</span>
+              <span *ngIf="note.updatedAt">
+                Edytowano: {{ formatDateTime(note.updatedAt) }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <p class="empty-message" *ngIf="meetingNotes.length === 0">
@@ -72,26 +158,28 @@
         </p>
       </div>
 
-      <div class="document-section">
+      <div class="attachments-section">
         <h3>Załączniki</h3>
 
-        <div class="attachment-card" *ngFor="let attachment of meetingAttachments">
-          <div>
-            <strong>{{ attachment.originalName }}</strong>
-            <p>
-              Typ: {{ attachment.mimeType }}<br />
-              Dodano: {{ formatDateTime(attachment.uploadedAt) }}
-            </p>
-          </div>
+        <div class="attachments-list" *ngIf="meetingAttachments.length > 0">
+          <div class="attachment-card" *ngFor="let attachment of meetingAttachments">
+            <div>
+              <strong>{{ attachment.originalName }}</strong>
+              <p>
+                Typ: {{ attachment.mimeType }}<br />
+                Dodano: {{ formatDateTime(attachment.uploadedAt) }}
+              </p>
+            </div>
 
-          <a
-            [href]="getAttachmentUrl(attachment)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="open-link"
-          >
-            Otwórz
-          </a>
+            <a
+              [href]="getAttachmentUrl(attachment)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="open-link"
+            >
+              Otwórz
+            </a>
+          </div>
         </div>
 
         <p class="empty-message" *ngIf="meetingAttachments.length === 0">
@@ -99,39 +187,5 @@
         </p>
       </div>
     </div>
-  </section>
-
-  <section class="documents-table">
-    <h2>Lista dokumentacji spotkań</h2>
-
-    <table *ngIf="meetings.length > 0">
-      <thead>
-        <tr>
-          <th>Spotkanie</th>
-          <th>Typ</th>
-          <th>Termin</th>
-          <th>Status</th>
-          <th>Akcje</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let meeting of meetings">
-          <td>{{ meeting.title }}</td>
-          <td>{{ meeting.meetingType }}</td>
-          <td>{{ formatDate(meeting.startDate) }}</td>
-          <td>{{ meeting.status }}</td>
-          <td>
-            <button type="button" (click)="showDetails(meeting)">
-              Szczegóły
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p class="empty-message" *ngIf="meetings.length === 0">
-      Brak spotkań z dokumentacją.
-    </p>
   </section>
 </div>

@@ -1,4 +1,39 @@
 const express = require('express');
+const { addAuditLog } = require('../utils/audit');
+
+function getRequestUser(req) {
+  return {
+    userId: req.body.userId || null,
+    userRole: req.body.userRole || null
+  };
+}
+
+function calculateDurationHours(workDate, startTime, endTime) {
+  const start = new Date(`${workDate}T${startTime}`);
+  const end = new Date(`${workDate}T${endTime}`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+
+  if (end <= start) {
+    return null;
+  }
+
+  const durationMs = end.getTime() - start.getTime();
+  return durationMs / (1000 * 60 * 60);
+}
+
+function mapWorkTimeEntry(entry) {
+  return {
+    ...entry,
+    durationHours: calculateDurationHours(
+      entry.workDate,
+      entry.startTime,
+      entry.endTime
+    )
+  };
+}
 
 function validateWorkTimeData(data) {
   const agentId = Number(data.agentId);
@@ -10,28 +45,18 @@ function validateWorkTimeData(data) {
   if (!agentId || !workDate || !startTime || !endTime) {
     return {
       valid: false,
-      error: 'Uzupełnij wszystkie wymagane pola ewidencji czasu pracy.'
+      error: 'Uzupełnij agenta, datę oraz godziny pracy.'
     };
   }
 
-  const start = new Date(`${workDate}T${startTime}`);
-  const end = new Date(`${workDate}T${endTime}`);
+  const durationHours = calculateDurationHours(workDate, startTime, endTime);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return {
-      valid: false,
-      error: 'Nieprawidłowy format daty lub godziny.'
-    };
-  }
-
-  if (end <= start) {
+  if (durationHours === null) {
     return {
       valid: false,
       error: 'Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia.'
     };
   }
-
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
   return {
     valid: true,
@@ -40,61 +65,43 @@ function validateWorkTimeData(data) {
       workDate,
       startTime,
       endTime,
-      description,
-      durationHours
+      description
     }
   };
+}
+
+async function getWorkTimeEntryById(db, id) {
+  const entry = await db.get(
+    `
+    SELECT
+      work_time_entries.id,
+      work_time_entries.agent_id AS agentId,
+      agents.first_name || ' ' || agents.last_name AS agentName,
+      work_time_entries.work_date AS workDate,
+      work_time_entries.start_time AS startTime,
+      work_time_entries.end_time AS endTime,
+      work_time_entries.description
+    FROM work_time_entries
+    JOIN agents ON agents.id = work_time_entries.agent_id
+    WHERE work_time_entries.id = ?
+    `,
+    [id]
+  );
+
+  if (!entry) {
+    return null;
+  }
+
+  return mapWorkTimeEntry(entry);
 }
 
 function workTimeRouter(db) {
   const router = express.Router();
 
-    router.get('/agent/:agentId', async (req, res) => {
-      try {
-        const { agentId } = req.params;
-
-        const entries = await db.all(
-          `
-          SELECT
-            work_time_entries.id,
-            work_time_entries.agent_id AS agentId,
-            agents.first_name || ' ' || agents.last_name AS agentName,
-            work_time_entries.work_date AS workDate,
-            work_time_entries.start_time AS startTime,
-            work_time_entries.end_time AS endTime,
-            work_time_entries.description
-          FROM work_time_entries
-          JOIN agents ON agents.id = work_time_entries.agent_id
-          WHERE work_time_entries.agent_id = ?
-          ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time ASC
-          `,
-          [agentId]
-        );
-
-        const entriesWithDuration = entries.map((entry) => {
-          const start = new Date(`${entry.workDate}T${entry.startTime}`);
-          const end = new Date(`${entry.workDate}T${entry.endTime}`);
-          const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-          return {
-            ...entry,
-            durationHours
-          };
-        });
-
-        res.json(entriesWithDuration);
-      } catch (error) {
-        console.error('Błąd pobierania czasu pracy agenta:', error);
-
-        res.status(500).json({
-          error: 'Nie udało się pobrać czasu pracy agenta.'
-        });
-      }
-    });
-
   router.get('/', async (req, res) => {
     try {
-      const entries = await db.all(`
+      const entries = await db.all(
+        `
         SELECT
           work_time_entries.id,
           work_time_entries.agent_id AS agentId,
@@ -105,26 +112,48 @@ function workTimeRouter(db) {
           work_time_entries.description
         FROM work_time_entries
         JOIN agents ON agents.id = work_time_entries.agent_id
-        ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time ASC
-      `);
+        ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time DESC
+        `
+      );
 
-      const entriesWithDuration = entries.map((entry) => {
-        const start = new Date(`${entry.workDate}T${entry.startTime}`);
-        const end = new Date(`${entry.workDate}T${entry.endTime}`);
-        const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-        return {
-          ...entry,
-          durationHours
-        };
-      });
-
-      res.json(entriesWithDuration);
+      res.json(entries.map(mapWorkTimeEntry));
     } catch (error) {
       console.error('Błąd pobierania ewidencji czasu pracy:', error);
 
       res.status(500).json({
         error: 'Nie udało się pobrać ewidencji czasu pracy.'
+      });
+    }
+  });
+
+  router.get('/agent/:agentId', async (req, res) => {
+    try {
+      const { agentId } = req.params;
+
+      const entries = await db.all(
+        `
+        SELECT
+          work_time_entries.id,
+          work_time_entries.agent_id AS agentId,
+          agents.first_name || ' ' || agents.last_name AS agentName,
+          work_time_entries.work_date AS workDate,
+          work_time_entries.start_time AS startTime,
+          work_time_entries.end_time AS endTime,
+          work_time_entries.description
+        FROM work_time_entries
+        JOIN agents ON agents.id = work_time_entries.agent_id
+        WHERE work_time_entries.agent_id = ?
+        ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time DESC
+        `,
+        [agentId]
+      );
+
+      res.json(entries.map(mapWorkTimeEntry));
+    } catch (error) {
+      console.error('Błąd pobierania czasu pracy agenta:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się pobrać czasu pracy agenta.'
       });
     }
   });
@@ -139,11 +168,17 @@ function workTimeRouter(db) {
         });
       }
 
-      const { agentId, workDate, startTime, endTime, description } = validation.entry;
+      const {
+        agentId,
+        workDate,
+        startTime,
+        endTime,
+        description
+      } = validation.entry;
 
       const agent = await db.get(
         `
-        SELECT id
+        SELECT id, first_name AS firstName, last_name AS lastName, role, status
         FROM agents
         WHERE id = ?
         `,
@@ -152,7 +187,13 @@ function workTimeRouter(db) {
 
       if (!agent) {
         return res.status(404).json({
-          error: 'Nie znaleziono wybranego agenta.'
+          error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      if (agent.role === 'ADMIN') {
+        return res.status(400).json({
+          error: 'Nie można dodać czasu pracy dla administratora.'
         });
       }
 
@@ -167,34 +208,29 @@ function workTimeRouter(db) {
         )
         VALUES (?, ?, ?, ?, ?)
         `,
-        [agentId, workDate, startTime, endTime, description]
+        [
+          agentId,
+          workDate,
+          startTime,
+          endTime,
+          description
+        ]
       );
 
-      const createdEntry = await db.get(
-        `
-        SELECT
-          work_time_entries.id,
-          work_time_entries.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName,
-          work_time_entries.work_date AS workDate,
-          work_time_entries.start_time AS startTime,
-          work_time_entries.end_time AS endTime,
-          work_time_entries.description
-        FROM work_time_entries
-        JOIN agents ON agents.id = work_time_entries.agent_id
-        WHERE work_time_entries.id = ?
-        `,
-        [result.lastID]
-      );
+      const createdEntry = await getWorkTimeEntryById(db, result.lastID);
 
-      const start = new Date(`${createdEntry.workDate}T${createdEntry.startTime}`);
-      const end = new Date(`${createdEntry.workDate}T${createdEntry.endTime}`);
-      const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const { userId, userRole } = getRequestUser(req);
 
-      res.status(201).json({
-        ...createdEntry,
-        durationHours
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'CREATE_WORK_TIME',
+        entityType: 'WORK_TIME_ENTRY',
+        entityId: createdEntry.id,
+        description: `Dodano wpis czasu pracy agenta "${createdEntry.agentName}" z dnia ${createdEntry.workDate}.`
       });
+
+      res.status(201).json(createdEntry);
     } catch (error) {
       console.error('Błąd dodawania wpisu czasu pracy:', error);
 
@@ -208,6 +244,14 @@ function workTimeRouter(db) {
     try {
       const { id } = req.params;
 
+      const existingEntry = await getWorkTimeEntryById(db, id);
+
+      if (!existingEntry) {
+        return res.status(404).json({
+          error: 'Nie znaleziono wpisu czasu pracy.'
+        });
+      }
+
       const validation = validateWorkTimeData(req.body);
 
       if (!validation.valid) {
@@ -216,37 +260,34 @@ function workTimeRouter(db) {
         });
       }
 
-      const existingEntry = await db.get(
-        `
-        SELECT id
-        FROM work_time_entries
-        WHERE id = ?
-        `,
-        [id]
-      );
-
-      if (!existingEntry) {
-        return res.status(404).json({
-          error: 'Nie znaleziono wpisu czasu pracy.'
-        });
-      }
+      const {
+        agentId,
+        workDate,
+        startTime,
+        endTime,
+        description
+      } = validation.entry;
 
       const agent = await db.get(
         `
-        SELECT id
+        SELECT id, first_name AS firstName, last_name AS lastName, role, status
         FROM agents
         WHERE id = ?
         `,
-        [validation.entry.agentId]
+        [agentId]
       );
 
       if (!agent) {
         return res.status(404).json({
-          error: 'Nie znaleziono wybranego agenta.'
+          error: 'Nie znaleziono agenta.'
         });
       }
 
-      const { agentId, workDate, startTime, endTime, description } = validation.entry;
+      if (agent.role === 'ADMIN') {
+        return res.status(400).json({
+          error: 'Nie można przypisać czasu pracy do administratora.'
+        });
+      }
 
       await db.run(
         `
@@ -259,34 +300,30 @@ function workTimeRouter(db) {
           description = ?
         WHERE id = ?
         `,
-        [agentId, workDate, startTime, endTime, description, id]
+        [
+          agentId,
+          workDate,
+          startTime,
+          endTime,
+          description,
+          id
+        ]
       );
 
-      const updatedEntry = await db.get(
-        `
-        SELECT
-          work_time_entries.id,
-          work_time_entries.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName,
-          work_time_entries.work_date AS workDate,
-          work_time_entries.start_time AS startTime,
-          work_time_entries.end_time AS endTime,
-          work_time_entries.description
-        FROM work_time_entries
-        JOIN agents ON agents.id = work_time_entries.agent_id
-        WHERE work_time_entries.id = ?
-        `,
-        [id]
-      );
+      const updatedEntry = await getWorkTimeEntryById(db, id);
 
-      const start = new Date(`${updatedEntry.workDate}T${updatedEntry.startTime}`);
-      const end = new Date(`${updatedEntry.workDate}T${updatedEntry.endTime}`);
-      const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const { userId, userRole } = getRequestUser(req);
 
-      res.json({
-        ...updatedEntry,
-        durationHours
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'UPDATE_WORK_TIME',
+        entityType: 'WORK_TIME_ENTRY',
+        entityId: Number(id),
+        description: `Zaktualizowano wpis czasu pracy agenta "${updatedEntry.agentName}" z dnia ${updatedEntry.workDate}.`
       });
+
+      res.json(updatedEntry);
     } catch (error) {
       console.error('Błąd edycji wpisu czasu pracy:', error);
 
@@ -300,14 +337,7 @@ function workTimeRouter(db) {
     try {
       const { id } = req.params;
 
-      const entry = await db.get(
-        `
-        SELECT id
-        FROM work_time_entries
-        WHERE id = ?
-        `,
-        [id]
-      );
+      const entry = await getWorkTimeEntryById(db, id);
 
       if (!entry) {
         return res.status(404).json({
@@ -322,6 +352,17 @@ function workTimeRouter(db) {
         `,
         [id]
       );
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'DELETE_WORK_TIME',
+        entityType: 'WORK_TIME_ENTRY',
+        entityId: Number(id),
+        description: `Usunięto wpis czasu pracy agenta "${entry.agentName}" z dnia ${entry.workDate}.`
+      });
 
       res.json({
         message: 'Wpis czasu pracy został usunięty.'

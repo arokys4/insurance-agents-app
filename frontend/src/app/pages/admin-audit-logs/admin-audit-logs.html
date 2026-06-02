@@ -1,0 +1,78 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Audyt zmian</h1>
+      <p>Historia najważniejszych operacji wykonanych w systemie.</p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
+    </button>
+  </header>
+
+  <section class="summary-card">
+    <h2>Podsumowanie</h2>
+    <p>Liczba zarejestrowanych operacji: {{ logs.length }}</p>
+    <p>Liczba widocznych wyników: {{ filteredLogs.length }}</p>
+  </section>
+
+  <section class="audit-table">
+    <div class="table-header">
+      <div>
+        <h2>Historia zmian</h2>
+        <p>Przegląd operacji wykonanych przez użytkowników systemu.</p>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchText"
+          placeholder="Szukaj w audycie..."
+        />
+
+        <button
+          type="button"
+          class="secondary-button"
+          *ngIf="searchText"
+          (click)="clearSearch()"
+        >
+          Wyczyść
+        </button>
+      </div>
+    </div>
+
+    <div class="table-scroll" *ngIf="filteredLogs.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Użytkownik</th>
+            <th>Rola</th>
+            <th>Akcja</th>
+            <th>Obiekt</th>
+            <th>Opis</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let log of filteredLogs">
+            <td>{{ formatDate(log.createdAt) }}</td>
+            <td>{{ formatUser(log) }}</td>
+            <td>{{ formatRole(log.userRole) }}</td>
+            <td>{{ formatAction(log.action) }}</td>
+            <td>{{ formatEntityType(log.entityType) }}</td>
+            <td>{{ log.description }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty-message" *ngIf="logs.length === 0">
+      Brak wpisów audytu zmian.
+    </p>
+
+    <p class="empty-message" *ngIf="logs.length > 0 && filteredLogs.length === 0">
+      Brak wyników dla podanej frazy.
+    </p>
+  </section>
+</div>

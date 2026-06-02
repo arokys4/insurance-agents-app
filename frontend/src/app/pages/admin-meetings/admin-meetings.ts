@@ -44,6 +44,15 @@ interface MeetingAttachment {
   uploadedAt?: string;
 }
 
+interface MeetingConflictInfo {
+  message: string;
+  conflictTitle: string;
+  conflictStartDate: string;
+  conflictEndDate: string;
+  suggestedStartDate: string | null;
+  suggestedEndDate: string | null;
+}
+
 @Component({
   selector: 'app-admin-meetings',
   imports: [NgFor, NgIf, FormsModule],
@@ -58,6 +67,8 @@ export class AdminMeetings implements OnInit {
   private backendUrl = 'http://localhost:4000';
 
   meetings: Meeting[] = [];
+  meetingSearchText = '';
+
   agents: Agent[] = [];
 
   pendingStatuses: { [meetingId: number]: string } = {};
@@ -75,6 +86,7 @@ export class AdminMeetings implements OnInit {
   editedMeetingId: number | null = null;
 
   selectedMeeting: Meeting | null = null;
+  meetingConflictInfo: MeetingConflictInfo | null = null;
 
   meetingTypes = [
     'Spotkanie z klientem',
@@ -109,6 +121,80 @@ export class AdminMeetings implements OnInit {
   ngOnInit(): void {
     this.loadAgents();
     this.loadMeetings();
+  }
+
+  get filteredMeetings(): Meeting[] {
+    const search = this.meetingSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.meetings;
+    }
+
+    return this.meetings.filter((meeting) => {
+      const values = [
+        meeting.title,
+        meeting.description,
+        meeting.meetingType,
+        meeting.status,
+        meeting.agentName,
+        this.formatDate(meeting.startDate),
+        this.formatDate(meeting.endDate)
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearMeetingSearch(): void {
+    this.meetingSearchText = '';
+  }
+
+  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
+    const userJson = localStorage.getItem('user');
+    const user = userJson ? JSON.parse(userJson) : null;
+
+    return {
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null
+    };
+  }
+
+  handleMeetingSaveError(error: any): void {
+    console.error('Błąd zapisu spotkania:', error);
+
+    this.meetingConflictInfo = null;
+
+    if (error.status === 409 && error.error?.conflict) {
+      const conflict = error.error.conflict;
+
+      this.meetingConflictInfo = {
+        message: error.error.error || 'Agent ma już spotkanie w wybranym terminie.',
+        conflictTitle: conflict.title,
+        conflictStartDate: conflict.startDate,
+        conflictEndDate: conflict.endDate,
+        suggestedStartDate: error.error.suggestedStartDate || null,
+        suggestedEndDate: error.error.suggestedEndDate || null
+      };
+
+      return;
+    }
+
+    const message =
+      error.error?.error || 'Nie udało się zapisać spotkania.';
+
+    alert(message);
+  }
+
+  useSuggestedMeetingTime(): void {
+    if (!this.meetingConflictInfo?.suggestedStartDate || !this.meetingConflictInfo?.suggestedEndDate) {
+      return;
+    }
+
+    this.meetingForm.startDate = this.meetingConflictInfo.suggestedStartDate;
+    this.meetingForm.endDate = this.meetingConflictInfo.suggestedEndDate;
+    this.meetingConflictInfo = null;
   }
 
   loadAgents(): void {
@@ -147,6 +233,7 @@ export class AdminMeetings implements OnInit {
 
   showAddMeetingForm(): void {
     this.clearForm();
+    this.meetingConflictInfo = null;
     this.editMode = false;
     this.editedMeetingId = null;
     this.selectedMeeting = null;
@@ -161,6 +248,8 @@ export class AdminMeetings implements OnInit {
     if (!this.validateMeetingForm()) {
       return;
     }
+
+    this.meetingConflictInfo = null;
 
     if (this.editMode && this.editedMeetingId !== null) {
       this.updateMeeting();
@@ -184,6 +273,11 @@ export class AdminMeetings implements OnInit {
     const start = new Date(this.meetingForm.startDate);
     const end = new Date(this.meetingForm.endDate);
 
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      alert('Nieprawidłowy format daty.');
+      return false;
+    }
+
     if (end <= start) {
       alert('Data zakończenia musi być późniejsza niż data rozpoczęcia.');
       return false;
@@ -193,40 +287,46 @@ export class AdminMeetings implements OnInit {
   }
 
   addMeeting(): void {
-    this.http.post<Meeting>(this.meetingsApiUrl, this.meetingForm).subscribe({
+    const payload = {
+      ...this.meetingForm,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.post<Meeting>(this.meetingsApiUrl, payload).subscribe({
       next: () => {
         this.loadMeetings();
         this.cancel();
       },
       error: (error) => {
-        console.error('Błąd dodawania spotkania:', error);
-
-        const message =
-          error.error?.error || 'Nie udało się dodać spotkania.';
-
-        alert(message);
+        this.handleMeetingSaveError(error);
       }
     });
   }
 
   updateMeeting(): void {
-    this.http.put<Meeting>(`${this.meetingsApiUrl}/${this.editedMeetingId}`, this.meetingForm).subscribe({
+    if (this.editedMeetingId === null) {
+      return;
+    }
+
+    const payload = {
+      ...this.meetingForm,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.put<Meeting>(`${this.meetingsApiUrl}/${this.editedMeetingId}`, payload).subscribe({
       next: () => {
         this.loadMeetings();
         this.cancel();
       },
       error: (error) => {
-        console.error('Błąd edycji spotkania:', error);
-
-        const message =
-          error.error?.error || 'Nie udało się zaktualizować spotkania.';
-
-        alert(message);
+        this.handleMeetingSaveError(error);
       }
     });
   }
 
   editMeeting(meeting: Meeting): void {
+    this.meetingConflictInfo = null;
+
     this.meetingForm = {
       title: meeting.title,
       description: meeting.description,
@@ -298,9 +398,12 @@ export class AdminMeetings implements OnInit {
 
     const selectedStatus = this.getPendingStatus(meeting);
 
-    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${meeting.id}/status`, {
-      status: selectedStatus
-    }).subscribe({
+    const payload = {
+      status: selectedStatus,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${meeting.id}/status`, payload).subscribe({
       next: () => {
         if (this.selectedMeeting && this.selectedMeeting.id === meeting.id) {
           this.selectedMeeting = {
@@ -365,7 +468,8 @@ export class AdminMeetings implements OnInit {
 
     const payload = {
       meetingId: this.selectedMeeting.id,
-      content
+      content,
+      ...this.getLoggedUserPayload()
     };
 
     this.http.post<MeetingNote>(this.notesApiUrl, payload).subscribe({
@@ -395,7 +499,12 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, { content }).subscribe({
+    const payload = {
+      content,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, payload).subscribe({
       next: () => {
         this.loadNotes(this.selectedMeeting!.id!);
         this.clearNoteForm();
@@ -416,13 +525,17 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
+    const noteId = note.id;
+
     const confirmDelete = confirm('Czy na pewno chcesz usunąć tę notatkę?');
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.notesApiUrl}/${note.id}`).subscribe({
+    this.http.request('delete', `${this.notesApiUrl}/${noteId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.loadNotes(this.selectedMeeting!.id!);
         this.clearNoteForm();
@@ -482,9 +595,13 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
+    const loggedUser = this.getLoggedUserPayload();
+
     const formData = new FormData();
     formData.append('meetingId', String(this.selectedMeeting.id));
     formData.append('file', this.selectedFile);
+    formData.append('userId', String(loggedUser.userId ?? ''));
+    formData.append('userRole', loggedUser.userRole ?? '');
 
     this.http.post<MeetingAttachment>(this.attachmentsApiUrl, formData).subscribe({
       next: () => {
@@ -513,13 +630,17 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
+    const attachmentId = attachment.id;
+
     const confirmDelete = confirm(`Czy na pewno chcesz usunąć załącznik "${attachment.originalName}"?`);
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.attachmentsApiUrl}/${attachment.id}`).subscribe({
+    this.http.request('delete', `${this.attachmentsApiUrl}/${attachmentId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.loadAttachments(this.selectedMeeting!.id!);
       },
@@ -539,9 +660,11 @@ export class AdminMeetings implements OnInit {
   }
 
   deleteMeeting(meeting: Meeting): void {
-    if (!meeting.id) {
+    if (meeting.id === undefined) {
       return;
     }
+
+    const meetingId = meeting.id;
 
     const confirmDelete = confirm(
       `Czy na pewno chcesz usunąć spotkanie "${meeting.title}"?`
@@ -551,7 +674,9 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    this.http.delete(`${this.meetingsApiUrl}/${meeting.id}`).subscribe({
+    this.http.request('delete', `${this.meetingsApiUrl}/${meetingId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.selectedMeeting = null;
         this.meetingNotes = [];
@@ -573,6 +698,7 @@ export class AdminMeetings implements OnInit {
 
   cancel(): void {
     this.clearForm();
+    this.meetingConflictInfo = null;
     this.showForm = false;
     this.editMode = false;
     this.editedMeetingId = null;
@@ -588,6 +714,8 @@ export class AdminMeetings implements OnInit {
       status: 'Zaplanowane',
       agentId: null
     };
+
+    this.meetingConflictInfo = null;
   }
 
   formatDate(value: string): string {

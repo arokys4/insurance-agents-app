@@ -20,10 +20,6 @@
   color: #555;
 }
 
-.toolbar {
-  margin: 24px 0;
-}
-
 button {
   padding: 10px 16px;
   border: none;
@@ -55,9 +51,13 @@ button:hover {
   background: #23272b;
 }
 
-/* Formularz dodawania i edycji spotkania */
+.toolbar {
+  margin: 24px 0;
+}
 
-.form-card {
+.form-card,
+.details-card,
+.meetings-table {
   background: white;
   padding: 28px;
   border-radius: 10px;
@@ -65,15 +65,17 @@ button:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.form-card h2 {
+.form-card h2,
+.details-card h2,
+.meetings-table h2 {
   margin-top: 0;
   color: #198754;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 20px 32px;
 }
 
 .form-field {
@@ -81,41 +83,53 @@ button:hover {
   flex-direction: column;
 }
 
-.form-field label {
+.form-field.full-width,
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field label,
+.note-form label,
+.attachment-form label {
   font-weight: bold;
   margin-bottom: 6px;
+  color: #222;
 }
 
 .form-field input,
 .form-field select,
 .form-field textarea,
-td select {
+.note-form textarea,
+.search-box input {
+  width: 100%;
   padding: 10px;
   border: 1px solid #ccd2da;
   border-radius: 6px;
   font-size: 14px;
+  box-sizing: border-box;
+  background: white;
 }
 
-.form-field textarea {
-  resize: vertical;
+.form-field input,
+.form-field select,
+.search-box input {
+  height: 42px;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.note-form textarea:focus,
+.search-box input:focus {
+  outline: none;
+  border-color: #198754;
+  box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
 }
 
 .form-actions {
   margin-top: 24px;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-/* Szczegóły spotkania */
-
-.details-card {
-  background: white;
-  padding: 28px;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 8px;
 }
 
 .details-header {
@@ -127,24 +141,16 @@ td select {
   border-bottom: 1px solid #e0e4ea;
 }
 
-.details-header h2 {
-  margin: 0 0 8px 0;
-  color: #198754;
-}
-
 .details-header p {
   margin: 0;
   color: #555;
-}
-
-.details-content {
-  margin-top: 24px;
 }
 
 .details-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 18px 32px;
+  margin-top: 24px;
 }
 
 .details-item {
@@ -167,143 +173,70 @@ td select {
   line-height: 1.4;
 }
 
-/* Układ notatek i załączników obok siebie */
-
 .details-extra-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 24px;
-  margin-top: 32px;
+  margin-top: 28px;
   padding-top: 24px;
   border-top: 1px solid #e0e4ea;
 }
 
 .notes-section,
 .attachments-section {
+  border: 1px solid #d7e4dc;
   background: #f8fbf9;
-  border: 1px solid #d9e8df;
   border-radius: 10px;
-  padding: 20px;
+  padding: 18px;
 }
 
-.notes-header,
-.attachments-header {
-  margin-bottom: 16px;
-}
-
-.notes-header h3,
-.attachments-header h3 {
-  margin: 0 0 6px 0;
+.notes-section h3,
+.attachments-section h3 {
+  margin-top: 0;
   color: #198754;
 }
 
-.notes-header p,
-.attachments-header p {
-  margin: 0;
-  color: #555;
-  font-size: 14px;
-}
-
-/* Formularz notatki i formularz załącznika */
-
 .note-form,
 .attachment-form {
-  background: white;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #d9e8df;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.note-form label,
-.attachment-form label {
-  font-weight: bold;
-  color: #198754;
-}
-
-.note-form textarea {
-  width: 100%;
-  min-height: 105px;
-  padding: 12px;
-  border: 1px solid #ccd2da;
-  border-radius: 6px;
-  font-size: 14px;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.attachment-form input {
-  padding: 10px;
-  border: 1px solid #ccd2da;
-  border-radius: 6px;
-  background: white;
-}
-
-.selected-file {
-  margin: 0;
-  color: #555;
-  font-size: 14px;
-}
-
 .note-actions,
 .note-buttons,
 .attachment-actions {
+  margin-top: 10px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Lista notatek i załączników */
-
-.notes-list,
-.attachments-list {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .note-card,
 .attachment-card {
-  background: white;
-  border: 1px solid #d9e8df;
-  border-left: 5px solid #198754;
-  border-radius: 8px;
+  margin-top: 14px;
   padding: 14px;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #198754;
 }
 
 .note-content {
   margin: 0 0 10px 0;
-  color: #222;
   line-height: 1.5;
 }
 
 .note-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   color: #666;
   font-size: 13px;
-  margin-bottom: 10px;
 }
 
-.attachment-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.attachment-card strong {
-  color: #222;
-}
-
-.attachment-card p {
-  margin: 6px 0 0 0;
-  color: #666;
-  font-size: 13px;
+.selected-file {
+  margin: 0;
+  color: #555;
 }
 
 .open-link {
@@ -320,14 +253,53 @@ td select {
   background: #146c43;
 }
 
-/* Tabela spotkań */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
+}
 
-.meetings-table {
+.table-header h2 {
+  margin-bottom: 8px;
+}
+
+.table-header p {
+  margin: 0;
+  color: #555;
+}
+
+.results-counter {
+  margin-top: 8px !important;
+  font-size: 14px;
+  color: #555;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 360px;
+}
+
+.table-scroll {
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid #e0e4ea;
+  border-radius: 8px;
+}
+
+.table-scroll table {
+  min-width: 1100px;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
   background: white;
-  padding: 24px;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 2;
 }
 
 table {
@@ -348,6 +320,20 @@ td {
   vertical-align: top;
 }
 
+td select {
+  min-width: 150px;
+  height: 38px;
+  padding: 8px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+}
+
+.small-button {
+  margin-top: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
 .empty-message {
   margin-top: 16px;
   color: #555;
@@ -356,36 +342,33 @@ td {
   border-radius: 6px;
 }
 
-/* Responsywność */
-
-@media (max-width: 1100px) {
-  .details-extra-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 900px) {
   .page {
     padding: 24px;
   }
 
-  .header {
+  .header,
+  .table-header,
+  .details-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
   .form-grid,
-  .details-grid {
+  .details-grid,
+  .details-extra-grid {
     grid-template-columns: 1fr;
   }
 
-  .full-width {
-    grid-column: 1;
+  .search-box {
+    width: 100%;
+    min-width: 0;
   }
 
-  .attachment-card {
+  .form-actions {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   table {
@@ -396,23 +379,26 @@ td {
     margin-bottom: 6px;
   }
 }
-
-.status-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.conflict-box {
+  margin: 18px 0 24px 0;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #fff7e6;
+  border-left: 5px solid #f0ad4e;
+  color: #333;
 }
 
-.status-control select {
-  min-width: 150px;
-  padding: 10px;
-  border: 1px solid #ccd2da;
-  border-radius: 6px;
-  font-size: 14px;
+.conflict-box h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #b36b00;
 }
 
-.small-button {
-  padding: 8px 12px;
-  font-size: 13px;
-  margin-right: 0;
+.conflict-box p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.conflict-box button {
+  margin-top: 12px;
 }

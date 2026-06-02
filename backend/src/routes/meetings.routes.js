@@ -1,23 +1,16 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { addAuditLog } = require('../utils/audit');
 
 const uploadDirectory = path.join(__dirname, '../../uploads');
 
-const allowedMeetingTypes = [
-  'Spotkanie z klientem',
-  'Oględziny szkody',
-  'Spotkanie wewnętrzne',
-  'Inna sprawa'
-];
-
-const allowedStatuses = [
-  'Zaplanowane',
-  'W realizacji',
-  'Zakończone',
-  'Przełożone',
-  'Anulowane'
-];
+function getRequestUser(req) {
+  return {
+    userId: req.body.userId || null,
+    userRole: req.body.userRole || null
+  };
+}
 
 function validateMeetingData(data) {
   const title = (data.title || '').trim();
@@ -28,6 +21,21 @@ function validateMeetingData(data) {
   const status = data.status || 'Zaplanowane';
   const agentId = Number(data.agentId);
 
+  const allowedTypes = [
+    'Spotkanie z klientem',
+    'Oględziny szkody',
+    'Spotkanie wewnętrzne',
+    'Inna sprawa'
+  ];
+
+  const allowedStatuses = [
+    'Zaplanowane',
+    'W realizacji',
+    'Zakończone',
+    'Przełożone',
+    'Anulowane'
+  ];
+
   if (!title || !meetingType || !startDate || !endDate || !agentId) {
     return {
       valid: false,
@@ -35,7 +43,7 @@ function validateMeetingData(data) {
     };
   }
 
-  if (!allowedMeetingTypes.includes(meetingType)) {
+  if (!allowedTypes.includes(meetingType)) {
     return {
       valid: false,
       error: 'Nieprawidłowy typ spotkania.'
@@ -55,7 +63,7 @@ function validateMeetingData(data) {
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return {
       valid: false,
-      error: 'Nieprawidłowy format daty spotkania.'
+      error: 'Nieprawidłowy format daty.'
     };
   }
 
@@ -80,8 +88,174 @@ function validateMeetingData(data) {
   };
 }
 
+async function getMeetingById(db, id) {
+  return db.get(
+    `
+    SELECT
+      meetings.id,
+      meetings.title,
+      meetings.description,
+      meetings.meeting_type AS meetingType,
+      meetings.start_date AS startDate,
+      meetings.end_date AS endDate,
+      meetings.status,
+      meetings.agent_id AS agentId,
+      agents.first_name || ' ' || agents.last_name AS agentName
+    FROM meetings
+    JOIN agents ON agents.id = meetings.agent_id
+    WHERE meetings.id = ?
+    `,
+    [id]
+  );
+}
+
+function formatDateTimeForInput(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function calculateDurationMs(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  return end.getTime() - start.getTime();
+}
+
+async function findMeetingConflict(db, agentId, startDate, endDate, ignoredMeetingId = null) {
+  const params = [
+    agentId,
+    endDate,
+    startDate
+  ];
+
+  let ignoredCondition = '';
+
+  if (ignoredMeetingId !== null) {
+    ignoredCondition = 'AND id != ?';
+    params.push(ignoredMeetingId);
+  }
+
+  return db.get(
+    `
+    SELECT
+      id,
+      title,
+      start_date AS startDate,
+      end_date AS endDate,
+      status
+    FROM meetings
+    WHERE agent_id = ?
+      AND start_date < ?
+      AND end_date > ?
+      ${ignoredCondition}
+    ORDER BY start_date ASC
+    LIMIT 1
+    `,
+    params
+  );
+}
+
+async function suggestNextFreeSlot(db, agentId, startDate, endDate, ignoredMeetingId = null) {
+  const durationMs = calculateDurationMs(startDate, endDate);
+
+  let suggestedStart = new Date(startDate);
+  let suggestedEnd = new Date(suggestedStart.getTime() + durationMs);
+
+  for (let i = 0; i < 20; i += 1) {
+    const conflict = await findMeetingConflict(
+      db,
+      agentId,
+      formatDateTimeForInput(suggestedStart),
+      formatDateTimeForInput(suggestedEnd),
+      ignoredMeetingId
+    );
+
+    if (!conflict) {
+      return {
+        suggestedStartDate: formatDateTimeForInput(suggestedStart),
+        suggestedEndDate: formatDateTimeForInput(suggestedEnd)
+      };
+    }
+
+    suggestedStart = new Date(conflict.endDate);
+    suggestedEnd = new Date(suggestedStart.getTime() + durationMs);
+  }
+
+  return null;
+}
+
+async function buildConflictResponse(db, agentId, startDate, endDate, ignoredMeetingId = null) {
+  const conflict = await findMeetingConflict(
+    db,
+    agentId,
+    startDate,
+    endDate,
+    ignoredMeetingId
+  );
+
+  if (!conflict) {
+    return null;
+  }
+
+  const suggestion = await suggestNextFreeSlot(
+    db,
+    agentId,
+    startDate,
+    endDate,
+    ignoredMeetingId
+  );
+
+  return {
+    error: 'Agent ma już spotkanie w wybranym terminie.',
+    conflict: {
+      id: conflict.id,
+      title: conflict.title,
+      startDate: conflict.startDate,
+      endDate: conflict.endDate,
+      status: conflict.status
+    },
+    suggestedStartDate: suggestion ? suggestion.suggestedStartDate : null,
+    suggestedEndDate: suggestion ? suggestion.suggestedEndDate : null
+  };
+}
+
 function meetingsRouter(db) {
   const router = express.Router();
+
+  router.get('/', async (req, res) => {
+    try {
+      const meetings = await db.all(
+        `
+        SELECT
+          meetings.id,
+          meetings.title,
+          meetings.description,
+          meetings.meeting_type AS meetingType,
+          meetings.start_date AS startDate,
+          meetings.end_date AS endDate,
+          meetings.status,
+          meetings.agent_id AS agentId,
+          agents.first_name || ' ' || agents.last_name AS agentName
+        FROM meetings
+        JOIN agents ON agents.id = meetings.agent_id
+        ORDER BY meetings.start_date ASC
+        `
+      );
+
+      res.json(meetings);
+    } catch (error) {
+      console.error('Błąd pobierania spotkań:', error);
+
+      res.status(500).json({
+        error: 'Nie udało się pobrać listy spotkań.'
+      });
+    }
+  });
 
   router.get('/agent/:agentId', async (req, res) => {
     try {
@@ -117,30 +291,24 @@ function meetingsRouter(db) {
     }
   });
 
-  router.get('/', async (req, res) => {
+  router.get('/:id', async (req, res) => {
     try {
-      const meetings = await db.all(`
-        SELECT
-          meetings.id,
-          meetings.title,
-          meetings.description,
-          meetings.meeting_type AS meetingType,
-          meetings.start_date AS startDate,
-          meetings.end_date AS endDate,
-          meetings.status,
-          meetings.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName
-        FROM meetings
-        JOIN agents ON agents.id = meetings.agent_id
-        ORDER BY meetings.start_date ASC
-      `);
+      const { id } = req.params;
 
-      res.json(meetings);
+      const meeting = await getMeetingById(db, id);
+
+      if (!meeting) {
+        return res.status(404).json({
+          error: 'Nie znaleziono spotkania.'
+        });
+      }
+
+      res.json(meeting);
     } catch (error) {
-      console.error('Błąd pobierania spotkań:', error);
+      console.error('Błąd pobierania spotkania:', error);
 
       res.status(500).json({
-        error: 'Nie udało się pobrać listy spotkań.'
+        error: 'Nie udało się pobrać spotkania.'
       });
     }
   });
@@ -167,7 +335,7 @@ function meetingsRouter(db) {
 
       const agent = await db.get(
         `
-        SELECT id
+        SELECT id, first_name AS firstName, last_name AS lastName, status, role
         FROM agents
         WHERE id = ?
         `,
@@ -176,8 +344,31 @@ function meetingsRouter(db) {
 
       if (!agent) {
         return res.status(404).json({
-          error: 'Nie znaleziono wybranego agenta.'
+          error: 'Nie znaleziono agenta.'
         });
+      }
+
+      if (agent.role === 'ADMIN') {
+        return res.status(400).json({
+          error: 'Nie można przypisać spotkania do administratora.'
+        });
+      }
+
+      if (agent.status !== 'Aktywny') {
+        return res.status(400).json({
+          error: 'Nie można przypisać spotkania do nieaktywnego agenta.'
+        });
+      }
+
+      const conflictResponse = await buildConflictResponse(
+        db,
+        agentId,
+        startDate,
+        endDate
+      );
+
+      if (conflictResponse) {
+        return res.status(409).json(conflictResponse);
       }
 
       const result = await db.run(
@@ -193,27 +384,29 @@ function meetingsRouter(db) {
         )
         VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
-        [title, description, meetingType, startDate, endDate, status, agentId]
+        [
+          title,
+          description,
+          meetingType,
+          startDate,
+          endDate,
+          status,
+          agentId
+        ]
       );
 
-      const createdMeeting = await db.get(
-        `
-        SELECT
-          meetings.id,
-          meetings.title,
-          meetings.description,
-          meetings.meeting_type AS meetingType,
-          meetings.start_date AS startDate,
-          meetings.end_date AS endDate,
-          meetings.status,
-          meetings.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName
-        FROM meetings
-        JOIN agents ON agents.id = meetings.agent_id
-        WHERE meetings.id = ?
-        `,
-        [result.lastID]
-      );
+      const createdMeeting = await getMeetingById(db, result.lastID);
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'CREATE_MEETING',
+        entityType: 'MEETING',
+        entityId: createdMeeting.id,
+        description: `Dodano spotkanie "${createdMeeting.title}" dla agenta "${createdMeeting.agentName}".`
+      });
 
       res.status(201).json(createdMeeting);
     } catch (error) {
@@ -237,33 +430,11 @@ function meetingsRouter(db) {
         });
       }
 
-      const meetingExists = await db.get(
-        `
-        SELECT id
-        FROM meetings
-        WHERE id = ?
-        `,
-        [id]
-      );
+      const existingMeeting = await getMeetingById(db, id);
 
-      if (!meetingExists) {
+      if (!existingMeeting) {
         return res.status(404).json({
           error: 'Nie znaleziono spotkania.'
-        });
-      }
-
-      const agentExists = await db.get(
-        `
-        SELECT id
-        FROM agents
-        WHERE id = ?
-        `,
-        [validation.meeting.agentId]
-      );
-
-      if (!agentExists) {
-        return res.status(404).json({
-          error: 'Nie znaleziono wybranego agenta.'
         });
       }
 
@@ -276,6 +447,45 @@ function meetingsRouter(db) {
         status,
         agentId
       } = validation.meeting;
+
+      const agent = await db.get(
+        `
+        SELECT id, first_name AS firstName, last_name AS lastName, status, role
+        FROM agents
+        WHERE id = ?
+        `,
+        [agentId]
+      );
+
+      if (!agent) {
+        return res.status(404).json({
+          error: 'Nie znaleziono agenta.'
+        });
+      }
+
+      if (agent.role === 'ADMIN') {
+        return res.status(400).json({
+          error: 'Nie można przypisać spotkania do administratora.'
+        });
+      }
+
+      if (agent.status !== 'Aktywny') {
+        return res.status(400).json({
+          error: 'Nie można przypisać spotkania do nieaktywnego agenta.'
+        });
+      }
+
+      const conflictResponse = await buildConflictResponse(
+        db,
+        agentId,
+        startDate,
+        endDate,
+        Number(id)
+      );
+
+      if (conflictResponse) {
+        return res.status(409).json(conflictResponse);
+      }
 
       await db.run(
         `
@@ -290,27 +500,30 @@ function meetingsRouter(db) {
           agent_id = ?
         WHERE id = ?
         `,
-        [title, description, meetingType, startDate, endDate, status, agentId, id]
+        [
+          title,
+          description,
+          meetingType,
+          startDate,
+          endDate,
+          status,
+          agentId,
+          id
+        ]
       );
 
-      const updatedMeeting = await db.get(
-        `
-        SELECT
-          meetings.id,
-          meetings.title,
-          meetings.description,
-          meetings.meeting_type AS meetingType,
-          meetings.start_date AS startDate,
-          meetings.end_date AS endDate,
-          meetings.status,
-          meetings.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName
-        FROM meetings
-        JOIN agents ON agents.id = meetings.agent_id
-        WHERE meetings.id = ?
-        `,
-        [id]
-      );
+      const updatedMeeting = await getMeetingById(db, id);
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'UPDATE_MEETING',
+        entityType: 'MEETING',
+        entityId: Number(id),
+        description: `Zaktualizowano spotkanie "${updatedMeeting.title}" przypisane do agenta "${updatedMeeting.agentName}".`
+      });
 
       res.json(updatedMeeting);
     } catch (error) {
@@ -325,7 +538,15 @@ function meetingsRouter(db) {
   router.patch('/:id/status', async (req, res) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, userId, userRole } = req.body;
+
+      const allowedStatuses = [
+        'Zaplanowane',
+        'W realizacji',
+        'Zakończone',
+        'Przełożone',
+        'Anulowane'
+      ];
 
       if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
@@ -333,20 +554,25 @@ function meetingsRouter(db) {
         });
       }
 
-      const meetingExists = await db.get(
+      const meeting = await db.get(
         `
-        SELECT id
+        SELECT
+          id,
+          title,
+          status
         FROM meetings
         WHERE id = ?
         `,
         [id]
       );
 
-      if (!meetingExists) {
+      if (!meeting) {
         return res.status(404).json({
           error: 'Nie znaleziono spotkania.'
         });
       }
+
+      const oldStatus = meeting.status;
 
       await db.run(
         `
@@ -357,24 +583,18 @@ function meetingsRouter(db) {
         [status, id]
       );
 
-      const updatedMeeting = await db.get(
-        `
-        SELECT
-          meetings.id,
-          meetings.title,
-          meetings.description,
-          meetings.meeting_type AS meetingType,
-          meetings.start_date AS startDate,
-          meetings.end_date AS endDate,
-          meetings.status,
-          meetings.agent_id AS agentId,
-          agents.first_name || ' ' || agents.last_name AS agentName
-        FROM meetings
-        JOIN agents ON agents.id = meetings.agent_id
-        WHERE meetings.id = ?
-        `,
-        [id]
-      );
+      if (oldStatus !== status) {
+        await addAuditLog(db, {
+          userId: userId || null,
+          userRole: userRole || null,
+          action: 'UPDATE_MEETING_STATUS',
+          entityType: 'MEETING',
+          entityId: Number(id),
+          description: `Zmieniono status spotkania "${meeting.title}" z "${oldStatus}" na "${status}".`
+        });
+      }
+
+      const updatedMeeting = await getMeetingById(db, id);
 
       res.json(updatedMeeting);
     } catch (error) {
@@ -390,14 +610,7 @@ function meetingsRouter(db) {
     try {
       const { id } = req.params;
 
-      const meeting = await db.get(
-        `
-        SELECT id
-        FROM meetings
-        WHERE id = ?
-        `,
-        [id]
-      );
+      const meeting = await getMeetingById(db, id);
 
       if (!meeting) {
         return res.status(404).json({
@@ -445,6 +658,17 @@ function meetingsRouter(db) {
         `,
         [id]
       );
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'DELETE_MEETING',
+        entityType: 'MEETING',
+        entityId: Number(id),
+        description: `Usunięto spotkanie "${meeting.title}" przypisane do agenta "${meeting.agentName}".`
+      });
 
       res.json({
         message: 'Spotkanie oraz powiązane notatki i załączniki zostały usunięte.'

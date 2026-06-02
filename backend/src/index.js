@@ -10,6 +10,7 @@ const meetingsRouter = require('./routes/meetings.routes');
 const workTimeRouter = require('./routes/work-time.routes');
 const meetingNotesRouter = require('./routes/meeting-notes.routes');
 const meetingAttachmentsRouter = require('./routes/meeting-attachments.routes');
+const auditLogsRouter = require('./routes/audit-logs.routes');
 
 async function startServer() {
   const app = express();
@@ -34,6 +35,7 @@ async function startServer() {
   app.use('/api/work-time', workTimeRouter(db));
   app.use('/api/meeting-notes', meetingNotesRouter(db));
   app.use('/api/meeting-attachments', meetingAttachmentsRouter(db));
+  app.use('/api/audit-logs', auditLogsRouter(db));
   const PORT = 4000;
 
   app.listen(PORT, () => {

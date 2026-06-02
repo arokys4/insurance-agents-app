@@ -159,58 +159,87 @@
   </section>
 
   <section class="agents-table">
-    <h2>Lista agentów</h2>
+    <div class="table-header">
+      <div>
+        <h2>Lista agentów</h2>
+        <p>Wyszukuj agentów po imieniu, nazwisku, e-mailu, telefonie lub statusie.</p>
+      </div>
 
-    <table *ngIf="agents.length > 0">
-      <thead>
-        <tr>
-          <th>Imię</th>
-          <th>Nazwisko</th>
-          <th>E-mail</th>
-          <th>Telefon</th>
-          <th>Status</th>
-          <th>Akcje</th>
-        </tr>
-      </thead>
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="agentSearchText"
+          placeholder="Szukaj agenta..."
+        />
 
-      <tbody>
-        <tr *ngFor="let agent of agents">
-          <td>
-            <span
-              class="status-dot"
-              [class.active-dot]="agent.status === 'Aktywny'"
-              [class.inactive-dot]="agent.status === 'Nieaktywny'"
-            ></span>
+        <button
+          type="button"
+          class="secondary-button"
+          *ngIf="agentSearchText"
+          (click)="clearAgentSearch()"
+        >
+          Wyczyść
+        </button>
+      </div>
+    </div>
 
-            {{ agent.firstName }}
-          </td>
-          <td>{{ agent.lastName }}</td>
-          <td>{{ agent.email }}</td>
-          <td>{{ agent.phone }}</td>
-          <td>{{ agent.status }}</td>
-          <td>
-            <button type="button" (click)="editAgent(agent)">
-              Edytuj
-            </button>
+    <div class="table-scroll" *ngIf="filteredAgents.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Imię</th>
+            <th>Nazwisko</th>
+            <th>E-mail</th>
+            <th>Telefon</th>
+            <th>Status</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
 
-            <button type="button" (click)="showDetails(agent)">
-              Szczegóły
-            </button>
+        <tbody>
+          <tr *ngFor="let agent of filteredAgents">
+            <td>
+              <span
+                class="status-dot"
+                [class.active-dot]="agent.status === 'Aktywny'"
+                [class.inactive-dot]="agent.status === 'Nieaktywny'"
+              ></span>
 
-            <button
-              type="button"
-              class="delete-button"
-              (click)="deleteAgent(agent)"
-            >
-              Usuń
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              {{ agent.firstName }}
+            </td>
+
+            <td>{{ agent.lastName }}</td>
+            <td>{{ agent.email }}</td>
+            <td>{{ agent.phone }}</td>
+            <td>{{ agent.status }}</td>
+            <td>
+              <button type="button" (click)="editAgent(agent)">
+                Edytuj
+              </button>
+
+              <button type="button" (click)="showDetails(agent)">
+                Szczegóły
+              </button>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteAgent(agent)"
+              >
+                Usuń
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <p class="empty-message" *ngIf="agents.length === 0">
       Brak agentów w systemie.
+    </p>
+
+    <p class="empty-message" *ngIf="agents.length > 0 && filteredAgents.length === 0">
+      Brak agentów pasujących do wyszukiwania.
     </p>
   </section>
 </div>

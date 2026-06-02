@@ -1,30 +1,24 @@
 const express = require('express');
+const { addAuditLog } = require('../utils/audit');
 
-function validateNoteData(data) {
-  const meetingId = Number(data.meetingId);
-  const content = (data.content || '').trim();
-
-  if (!meetingId || !content) {
-    return {
-      valid: false,
-      error: 'Uzupełnij treść notatki oraz wybierz spotkanie.'
-    };
-  }
-
-  if (content.length < 5) {
-    return {
-      valid: false,
-      error: 'Notatka musi mieć co najmniej 5 znaków.'
-    };
-  }
-
+function getRequestUser(req) {
   return {
-    valid: true,
-    note: {
-      meetingId,
-      content
-    }
+    userId: req.body.userId || null,
+    userRole: req.body.userRole || null
   };
+}
+
+async function getMeetingTitle(db, meetingId) {
+  const meeting = await db.get(
+    `
+    SELECT title
+    FROM meetings
+    WHERE id = ?
+    `,
+    [meetingId]
+  );
+
+  return meeting ? meeting.title : `ID ${meetingId}`;
 }
 
 function meetingNotesRouter(db) {
@@ -54,26 +48,31 @@ function meetingNotesRouter(db) {
       console.error('Błąd pobierania notatek:', error);
 
       res.status(500).json({
-        error: 'Nie udało się pobrać notatek spotkania.'
+        error: 'Nie udało się pobrać notatek.'
       });
     }
   });
 
   router.post('/', async (req, res) => {
     try {
-      const validation = validateNoteData(req.body);
+      const meetingId = Number(req.body.meetingId);
+      const content = (req.body.content || '').trim();
 
-      if (!validation.valid) {
+      if (!meetingId || !content) {
         return res.status(400).json({
-          error: validation.error
+          error: 'Uzupełnij treść notatki.'
         });
       }
 
-      const { meetingId, content } = validation.note;
+      if (content.length < 5) {
+        return res.status(400).json({
+          error: 'Notatka musi mieć co najmniej 5 znaków.'
+        });
+      }
 
       const meeting = await db.get(
         `
-        SELECT id
+        SELECT id, title
         FROM meetings
         WHERE id = ?
         `,
@@ -82,14 +81,19 @@ function meetingNotesRouter(db) {
 
       if (!meeting) {
         return res.status(404).json({
-          error: 'Nie znaleziono wybranego spotkania.'
+          error: 'Nie znaleziono spotkania.'
         });
       }
 
       const result = await db.run(
         `
-        INSERT INTO meeting_notes (meeting_id, content)
-        VALUES (?, ?)
+        INSERT INTO meeting_notes (
+          meeting_id,
+          content,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `,
         [meetingId, content]
       );
@@ -108,6 +112,17 @@ function meetingNotesRouter(db) {
         [result.lastID]
       );
 
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'CREATE_NOTE',
+        entityType: 'MEETING_NOTE',
+        entityId: createdNote.id,
+        description: `Dodano notatkę do spotkania "${meeting.title}".`
+      });
+
       res.status(201).json(createdNote);
     } catch (error) {
       console.error('Błąd dodawania notatki:', error);
@@ -125,7 +140,7 @@ function meetingNotesRouter(db) {
 
       if (!content) {
         return res.status(400).json({
-          error: 'Treść notatki nie może być pusta.'
+          error: 'Uzupełnij treść notatki.'
         });
       }
 
@@ -135,16 +150,19 @@ function meetingNotesRouter(db) {
         });
       }
 
-      const note = await db.get(
+      const existingNote = await db.get(
         `
-        SELECT id
+        SELECT
+          id,
+          meeting_id AS meetingId,
+          content
         FROM meeting_notes
         WHERE id = ?
         `,
         [id]
       );
 
-      if (!note) {
+      if (!existingNote) {
         return res.status(404).json({
           error: 'Nie znaleziono notatki.'
         });
@@ -153,7 +171,9 @@ function meetingNotesRouter(db) {
       await db.run(
         `
         UPDATE meeting_notes
-        SET content = ?, updated_at = CURRENT_TIMESTAMP
+        SET
+          content = ?,
+          updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         `,
         [content, id]
@@ -173,6 +193,18 @@ function meetingNotesRouter(db) {
         [id]
       );
 
+      const meetingTitle = await getMeetingTitle(db, updatedNote.meetingId);
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'UPDATE_NOTE',
+        entityType: 'MEETING_NOTE',
+        entityId: Number(id),
+        description: `Zaktualizowano notatkę do spotkania "${meetingTitle}".`
+      });
+
       res.json(updatedNote);
     } catch (error) {
       console.error('Błąd edycji notatki:', error);
@@ -189,7 +221,10 @@ function meetingNotesRouter(db) {
 
       const note = await db.get(
         `
-        SELECT id
+        SELECT
+          id,
+          meeting_id AS meetingId,
+          content
         FROM meeting_notes
         WHERE id = ?
         `,
@@ -202,6 +237,8 @@ function meetingNotesRouter(db) {
         });
       }
 
+      const meetingTitle = await getMeetingTitle(db, note.meetingId);
+
       await db.run(
         `
         DELETE FROM meeting_notes
@@ -209,6 +246,17 @@ function meetingNotesRouter(db) {
         `,
         [id]
       );
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'DELETE_NOTE',
+        entityType: 'MEETING_NOTE',
+        entityId: Number(id),
+        description: `Usunięto notatkę ze spotkania "${meetingTitle}".`
+      });
 
       res.json({
         message: 'Notatka została usunięta.'

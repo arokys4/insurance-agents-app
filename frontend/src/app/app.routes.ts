@@ -11,7 +11,7 @@ import { ChangePassword } from './pages/change-password/change-password';
 import { AgentCalendar } from './pages/agent-calendar/agent-calendar';
 import { AgentWorkTime } from './pages/agent-work-time/agent-work-time';
 import { AgentDocuments } from './pages/agent-documents/agent-documents';
-
+import { AdminAuditLogs } from './pages/admin-audit-logs/admin-audit-logs';
 
 export const routes: Routes = [
   {
@@ -73,9 +73,15 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+  path: 'admin/audit-logs',
+  component: AdminAuditLogs,
+  canActivate: [adminGuard]
+  },
+  {
     path: '**',
     redirectTo: 'login'
   },
+
 
 
 ];

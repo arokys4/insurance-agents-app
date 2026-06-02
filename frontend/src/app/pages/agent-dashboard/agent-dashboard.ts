@@ -56,7 +56,9 @@ export class AgentDashboard implements OnInit {
   private backendUrl = 'http://localhost:4000';
 
   user: LoggedUser | null = null;
+
   meetings: Meeting[] = [];
+  meetingSearchText = '';
 
   selectedMeeting: Meeting | null = null;
   selectedStatus = '';
@@ -69,14 +71,6 @@ export class AgentDashboard implements OnInit {
   meetingAttachments: MeetingAttachment[] = [];
   selectedFile: File | null = null;
 
-  statuses = [
-    'Zaplanowane',
-    'W realizacji',
-    'Zakończone',
-    'Przełożone',
-    'Anulowane'
-  ];
-
   constructor(
     private router: Router,
     private http: HttpClient
@@ -86,8 +80,35 @@ export class AgentDashboard implements OnInit {
     this.loadLoggedUser();
 
     if (this.user) {
-      this.loadMyMeetings();
+      this.loadMeetings();
     }
+  }
+
+  get filteredMeetings(): Meeting[] {
+    const search = this.meetingSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.meetings;
+    }
+
+    return this.meetings.filter((meeting) => {
+      const values = [
+        meeting.title,
+        meeting.description,
+        meeting.meetingType,
+        meeting.status,
+        this.formatDate(meeting.startDate),
+        this.formatDate(meeting.endDate)
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearMeetingSearch(): void {
+    this.meetingSearchText = '';
   }
 
   loadLoggedUser(): void {
@@ -101,7 +122,17 @@ export class AgentDashboard implements OnInit {
     this.user = JSON.parse(userJson);
   }
 
-  loadMyMeetings(): void {
+  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
+    const userJson = localStorage.getItem('user');
+    const user = userJson ? JSON.parse(userJson) : null;
+
+    return {
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null
+    };
+  }
+
+  loadMeetings(): void {
     if (!this.user) {
       return;
     }
@@ -112,7 +143,7 @@ export class AgentDashboard implements OnInit {
       },
       error: (error) => {
         console.error('Błąd pobierania spotkań agenta:', error);
-        alert('Nie udało się pobrać Twoich spotkań.');
+        alert('Nie udało się pobrać listy spotkań.');
       }
     });
   }
@@ -123,7 +154,7 @@ export class AgentDashboard implements OnInit {
     this.clearNoteForm();
     this.selectedFile = null;
 
-    if (meeting.id) {
+    if (meeting.id !== undefined) {
       this.loadNotes(meeting.id);
       this.loadAttachments(meeting.id);
     }
@@ -138,18 +169,29 @@ export class AgentDashboard implements OnInit {
     this.clearNoteForm();
   }
 
+  hasStatusChanged(): boolean {
+    if (!this.selectedMeeting) {
+      return false;
+    }
+
+    return this.selectedStatus !== this.selectedMeeting.status;
+  }
+
   saveStatus(): void {
     if (!this.selectedMeeting?.id) {
       return;
     }
 
-    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${this.selectedMeeting.id}/status`, {
-      status: this.selectedStatus
-    }).subscribe({
+    const payload = {
+      status: this.selectedStatus,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.patch<Meeting>(`${this.meetingsApiUrl}/${this.selectedMeeting.id}/status`, payload).subscribe({
       next: (updatedMeeting) => {
         this.selectedMeeting = updatedMeeting;
         this.selectedStatus = updatedMeeting.status;
-        this.loadMyMeetings();
+        this.loadMeetings();
       },
       error: (error) => {
         console.error('Błąd zmiany statusu spotkania:', error);
@@ -162,14 +204,6 @@ export class AgentDashboard implements OnInit {
     });
   }
 
-  hasStatusChanged(): boolean {
-    if (!this.selectedMeeting) {
-      return false;
-    }
-
-    return this.selectedStatus !== this.selectedMeeting.status;
-  }
-
   loadNotes(meetingId: number): void {
     this.http.get<MeetingNote[]>(`${this.notesApiUrl}/meeting/${meetingId}`).subscribe({
       next: (notes) => {
@@ -177,7 +211,11 @@ export class AgentDashboard implements OnInit {
       },
       error: (error) => {
         console.error('Błąd pobierania notatek:', error);
-        this.meetingNotes = [];
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać notatek spotkania.';
+
+        alert(message);
       }
     });
   }
@@ -209,7 +247,8 @@ export class AgentDashboard implements OnInit {
 
     const payload = {
       meetingId: this.selectedMeeting.id,
-      content
+      content,
+      ...this.getLoggedUserPayload()
     };
 
     this.http.post<MeetingNote>(this.notesApiUrl, payload).subscribe({
@@ -239,7 +278,12 @@ export class AgentDashboard implements OnInit {
       return;
     }
 
-    this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, { content }).subscribe({
+    const payload = {
+      content,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, payload).subscribe({
       next: () => {
         this.loadNotes(this.selectedMeeting!.id!);
         this.clearNoteForm();
@@ -260,13 +304,17 @@ export class AgentDashboard implements OnInit {
       return;
     }
 
+    const noteId = note.id;
+
     const confirmDelete = confirm('Czy na pewno chcesz usunąć tę notatkę?');
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.notesApiUrl}/${note.id}`).subscribe({
+    this.http.request('delete', `${this.notesApiUrl}/${noteId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.loadNotes(this.selectedMeeting!.id!);
         this.clearNoteForm();
@@ -295,7 +343,11 @@ export class AgentDashboard implements OnInit {
       },
       error: (error) => {
         console.error('Błąd pobierania załączników:', error);
-        this.meetingAttachments = [];
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać załączników spotkania.';
+
+        alert(message);
       }
     });
   }
@@ -322,16 +374,21 @@ export class AgentDashboard implements OnInit {
       return;
     }
 
+    const loggedUser = this.getLoggedUserPayload();
+
     const formData = new FormData();
     formData.append('meetingId', String(this.selectedMeeting.id));
     formData.append('file', this.selectedFile);
+    formData.append('userId', String(loggedUser.userId ?? ''));
+    formData.append('userRole', loggedUser.userRole ?? '');
 
     this.http.post<MeetingAttachment>(this.attachmentsApiUrl, formData).subscribe({
       next: () => {
         this.loadAttachments(this.selectedMeeting!.id!);
         this.selectedFile = null;
 
-        const fileInput = document.getElementById('agentAttachmentFile') as HTMLInputElement;
+        const fileInput = document.getElementById('attachmentFile') as HTMLInputElement;
+
         if (fileInput) {
           fileInput.value = '';
         }
@@ -352,13 +409,17 @@ export class AgentDashboard implements OnInit {
       return;
     }
 
+    const attachmentId = attachment.id;
+
     const confirmDelete = confirm(`Czy na pewno chcesz usunąć załącznik "${attachment.originalName}"?`);
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.attachmentsApiUrl}/${attachment.id}`).subscribe({
+    this.http.request('delete', `${this.attachmentsApiUrl}/${attachmentId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.loadAttachments(this.selectedMeeting!.id!);
       },
@@ -375,6 +436,22 @@ export class AgentDashboard implements OnInit {
 
   getAttachmentUrl(attachment: MeetingAttachment): string {
     return `${this.backendUrl}${attachment.filePath}`;
+  }
+
+  getNearestMeeting(): Meeting | null {
+    if (this.meetings.length === 0) {
+      return null;
+    }
+
+    const now = new Date();
+
+    const futureMeetings = this.meetings
+      .filter(meeting => new Date(meeting.startDate) >= now)
+      .sort((a, b) => {
+        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      });
+
+    return futureMeetings[0] || null;
   }
 
   formatDate(value: string): string {
@@ -396,7 +473,7 @@ export class AgentDashboard implements OnInit {
   goToCalendar(): void {
     this.router.navigate(['/agent/calendar']);
   }
-  
+
   goToWorkTime(): void {
     this.router.navigate(['/agent/work-time']);
   }

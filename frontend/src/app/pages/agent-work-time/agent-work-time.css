@@ -204,3 +204,79 @@ td {
     margin-bottom: 6px;
   }
 }
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.table-header h2 {
+  margin-bottom: 8px;
+}
+
+.table-header p {
+  margin: 0;
+  color: #555;
+}
+
+.results-counter {
+  margin-top: 8px !important;
+  font-size: 14px;
+  color: #555;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 360px;
+}
+
+.search-box input {
+  width: 100%;
+  height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #198754;
+  box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
+}
+
+.table-scroll {
+  max-height: 460px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid #e0e4ea;
+  border-radius: 8px;
+}
+
+.table-scroll table {
+  min-width: 900px;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: 0;
+  }
+}

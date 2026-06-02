@@ -26,6 +26,7 @@ export class AdminAgents implements OnInit {
   private agentsApiUrl = 'http://localhost:4000/api/agents';
 
   agents: Agent[] = [];
+  agentSearchText = '';
 
   showForm = false;
   editMode = false;
@@ -49,6 +50,32 @@ export class AdminAgents implements OnInit {
 
   ngOnInit(): void {
     this.loadAgents();
+  }
+
+  get filteredAgents(): Agent[] {
+    const search = this.agentSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.agents;
+    }
+
+    return this.agents.filter((agent) => {
+      const values = [
+        agent.firstName,
+        agent.lastName,
+        agent.email,
+        agent.phone,
+        agent.status
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearAgentSearch(): void {
+    this.agentSearchText = '';
   }
 
   loadAgents(): void {
@@ -178,8 +205,23 @@ export class AdminAgents implements OnInit {
       .join(' ');
   }
 
+  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
+    const userJson = localStorage.getItem('user');
+    const user = userJson ? JSON.parse(userJson) : null;
+
+    return {
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null
+    };
+  }
+
   addAgent(): void {
-    this.http.post<Agent>(this.agentsApiUrl, this.agentForm).subscribe({
+    const payload = {
+      ...this.agentForm,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.post<Agent>(this.agentsApiUrl, payload).subscribe({
       next: () => {
         this.loadAgents();
         this.cancel();
@@ -200,8 +242,9 @@ export class AdminAgents implements OnInit {
       return;
     }
 
-    const payload: Agent = {
-      ...this.agentForm
+    const payload: any = {
+      ...this.agentForm,
+      ...this.getLoggedUserPayload()
     };
 
     if (!payload.password) {
@@ -262,7 +305,9 @@ export class AdminAgents implements OnInit {
       return;
     }
 
-    this.http.delete(`${this.agentsApiUrl}/${agent.id}`).subscribe({
+    this.http.request('delete', `${this.agentsApiUrl}/${agent.id}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.selectedAgent = null;
         this.loadAgents();

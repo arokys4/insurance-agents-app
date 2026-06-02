@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
 interface LoggedUser {
@@ -44,7 +45,7 @@ interface MeetingAttachment {
 
 @Component({
   selector: 'app-agent-documents',
-  imports: [NgFor, NgIf],
+  imports: [NgFor, NgIf, FormsModule],
   templateUrl: './agent-documents.html',
   styleUrl: './agent-documents.css'
 })
@@ -57,8 +58,9 @@ export class AgentDocuments implements OnInit {
   user: LoggedUser | null = null;
 
   meetings: Meeting[] = [];
-  selectedMeeting: Meeting | null = null;
+  documentSearchText = '';
 
+  selectedMeeting: Meeting | null = null;
   meetingNotes: MeetingNote[] = [];
   meetingAttachments: MeetingAttachment[] = [];
 
@@ -73,6 +75,33 @@ export class AgentDocuments implements OnInit {
     if (this.user) {
       this.loadMeetings();
     }
+  }
+
+  get filteredMeetings(): Meeting[] {
+    const search = this.documentSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.meetings;
+    }
+
+    return this.meetings.filter((meeting) => {
+      const values = [
+        meeting.title,
+        meeting.description,
+        meeting.meetingType,
+        meeting.status,
+        this.formatDate(meeting.startDate),
+        this.formatDate(meeting.endDate)
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearDocumentSearch(): void {
+    this.documentSearchText = '';
   }
 
   loadLoggedUser(): void {
@@ -96,7 +125,7 @@ export class AgentDocuments implements OnInit {
         this.meetings = meetings;
       },
       error: (error) => {
-        console.error('Błąd pobierania dokumentacji:', error);
+        console.error('Błąd pobierania spotkań do dokumentacji:', error);
         alert('Nie udało się pobrać dokumentacji spotkań.');
       }
     });
@@ -107,7 +136,7 @@ export class AgentDocuments implements OnInit {
     this.meetingNotes = [];
     this.meetingAttachments = [];
 
-    if (meeting.id) {
+    if (meeting.id !== undefined) {
       this.loadNotes(meeting.id);
       this.loadAttachments(meeting.id);
     }
@@ -126,7 +155,11 @@ export class AgentDocuments implements OnInit {
       },
       error: (error) => {
         console.error('Błąd pobierania notatek:', error);
-        this.meetingNotes = [];
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać notatek spotkania.';
+
+        alert(message);
       }
     });
   }
@@ -138,7 +171,11 @@ export class AgentDocuments implements OnInit {
       },
       error: (error) => {
         console.error('Błąd pobierania załączników:', error);
-        this.meetingAttachments = [];
+
+        const message =
+          error.error?.error || 'Nie udało się pobrać załączników spotkania.';
+
+        alert(message);
       }
     });
   }

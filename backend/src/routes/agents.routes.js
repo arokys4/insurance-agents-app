@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const { addAuditLog } = require('../utils/audit');
 
 function validatePasswordStrength(password) {
   if (!password || password.length < 8) {
@@ -23,6 +24,13 @@ function validatePasswordStrength(password) {
   }
 
   return null;
+}
+
+function getRequestUser(req) {
+  return {
+    userId: req.body.userId || null,
+    userRole: req.body.userRole || null
+  };
 }
 
 function formatName(value) {
@@ -276,6 +284,17 @@ function agentsRouter(db) {
         [result.lastID]
       );
 
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'CREATE_AGENT',
+        entityType: 'AGENT',
+        entityId: createdAgent.id,
+        description: `Dodano agenta "${createdAgent.firstName} ${createdAgent.lastName}".`
+      });
+
       res.status(201).json({
         ...createdAgent,
         mustChangePassword: Boolean(createdAgent.mustChangePassword)
@@ -414,6 +433,19 @@ function agentsRouter(db) {
         [id]
       );
 
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: password ? 'UPDATE_AGENT_WITH_PASSWORD' : 'UPDATE_AGENT',
+        entityType: 'AGENT',
+        entityId: Number(id),
+        description: password
+          ? `Zaktualizowano dane agenta "${updatedAgent.firstName} ${updatedAgent.lastName}" oraz ustawiono nowe hasło startowe.`
+          : `Zaktualizowano dane agenta "${updatedAgent.firstName} ${updatedAgent.lastName}".`
+      });
+
       res.json({
         ...updatedAgent,
         mustChangePassword: Boolean(updatedAgent.mustChangePassword)
@@ -489,6 +521,17 @@ function agentsRouter(db) {
         `,
         [id]
       );
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'DELETE_AGENT',
+        entityType: 'AGENT',
+        entityId: Number(id),
+        description: `Usunięto agenta "${agent.firstName} ${agent.lastName}".`
+      });
 
       res.json({
         message: `Agent ${agent.firstName} ${agent.lastName} został usunięty.`

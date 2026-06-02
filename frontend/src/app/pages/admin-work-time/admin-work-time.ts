@@ -11,6 +11,7 @@ interface Agent {
   email: string;
   phone: string;
   status: string;
+  role?: string;
 }
 
 interface WorkTimeEntry {
@@ -35,6 +36,8 @@ export class AdminWorkTime implements OnInit {
   private agentsApiUrl = 'http://localhost:4000/api/agents';
 
   entries: WorkTimeEntry[] = [];
+  workTimeSearchText = '';
+
   agents: Agent[] = [];
 
   showForm = false;
@@ -61,10 +64,51 @@ export class AdminWorkTime implements OnInit {
     this.loadEntries();
   }
 
+  get filteredEntries(): WorkTimeEntry[] {
+    const search = this.workTimeSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.entries;
+    }
+
+    return this.entries.filter((entry) => {
+      const values = [
+        entry.agentName,
+        entry.workDate,
+        entry.startTime,
+        entry.endTime,
+        this.formatDate(entry.workDate),
+        this.formatHours(entry.durationHours),
+        entry.description
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearWorkTimeSearch(): void {
+    this.workTimeSearchText = '';
+  }
+
+  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
+    const userJson = localStorage.getItem('user');
+    const user = userJson ? JSON.parse(userJson) : null;
+
+    return {
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null
+    };
+  }
+
   loadAgents(): void {
     this.http.get<Agent[]>(this.agentsApiUrl).subscribe({
       next: (agents) => {
-        this.agents = agents.filter(agent => agent.status === 'Aktywny');
+        this.agents = agents.filter(agent =>
+          agent.status === 'Aktywny' &&
+          agent.role !== 'ADMIN'
+        );
       },
       error: (error) => {
         console.error('Błąd pobierania agentów:', error);
@@ -87,10 +131,10 @@ export class AdminWorkTime implements OnInit {
 
   showAddEntryForm(): void {
     this.clearForm();
+    this.showForm = true;
     this.editMode = false;
     this.editedEntryId = null;
     this.selectedEntry = null;
-    this.showForm = true;
   }
 
   saveEntry(): void {
@@ -112,12 +156,17 @@ export class AdminWorkTime implements OnInit {
       !this.entryForm.startTime ||
       !this.entryForm.endTime
     ) {
-      alert('Uzupełnij wszystkie wymagane pola ewidencji czasu pracy.');
+      alert('Uzupełnij agenta, datę oraz godziny pracy.');
       return false;
     }
 
     const start = new Date(`${this.entryForm.workDate}T${this.entryForm.startTime}`);
     const end = new Date(`${this.entryForm.workDate}T${this.entryForm.endTime}`);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      alert('Nieprawidłowy format daty lub godziny.');
+      return false;
+    }
 
     if (end <= start) {
       alert('Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia.');
@@ -128,7 +177,12 @@ export class AdminWorkTime implements OnInit {
   }
 
   addEntry(): void {
-    this.http.post<WorkTimeEntry>(this.workTimeApiUrl, this.entryForm).subscribe({
+    const payload = {
+      ...this.entryForm,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.post<WorkTimeEntry>(this.workTimeApiUrl, payload).subscribe({
       next: () => {
         this.loadEntries();
         this.cancel();
@@ -145,7 +199,16 @@ export class AdminWorkTime implements OnInit {
   }
 
   updateEntry(): void {
-    this.http.put<WorkTimeEntry>(`${this.workTimeApiUrl}/${this.editedEntryId}`, this.entryForm).subscribe({
+    if (this.editedEntryId === null) {
+      return;
+    }
+
+    const payload = {
+      ...this.entryForm,
+      ...this.getLoggedUserPayload()
+    };
+
+    this.http.put<WorkTimeEntry>(`${this.workTimeApiUrl}/${this.editedEntryId}`, payload).subscribe({
       next: () => {
         this.loadEntries();
         this.cancel();
@@ -167,7 +230,7 @@ export class AdminWorkTime implements OnInit {
       workDate: entry.workDate,
       startTime: entry.startTime,
       endTime: entry.endTime,
-      description: entry.description
+      description: entry.description || ''
     };
 
     this.editMode = true;
@@ -190,15 +253,17 @@ export class AdminWorkTime implements OnInit {
       return;
     }
 
-    const confirmDelete = confirm(
-      `Czy na pewno chcesz usunąć wpis czasu pracy agenta ${entry.agentName}?`
-    );
+    const entryId = entry.id;
+
+    const confirmDelete = confirm('Czy na pewno chcesz usunąć ten wpis czasu pracy?');
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.workTimeApiUrl}/${entry.id}`).subscribe({
+    this.http.request('delete', `${this.workTimeApiUrl}/${entryId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.selectedEntry = null;
         this.loadEntries();

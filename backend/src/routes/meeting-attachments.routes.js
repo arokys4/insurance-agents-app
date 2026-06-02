@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { addAuditLog } = require('../utils/audit');
 
 const uploadDirectory = path.join(__dirname, '../../uploads');
 
@@ -14,33 +15,39 @@ const storage = multer.diskStorage({
     cb(null, uploadDirectory);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const safeOriginalName = file.originalname.replace(/\s+/g, '_');
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}-${safeOriginalName}`;
 
-    cb(null, `${uniqueSuffix}-${safeOriginalName}`);
+    cb(null, uniqueName);
   }
 });
-
-const allowedMimeTypes = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp'
-];
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024
-  },
-  fileFilter: (req, file, cb) => {
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      return cb(new Error('Dozwolone są tylko pliki PDF oraz obrazy JPG, PNG lub WEBP.'));
-    }
-
-    cb(null, true);
+    fileSize: 10 * 1024 * 1024
   }
 });
+
+function getRequestUser(req) {
+  return {
+    userId: req.body.userId || null,
+    userRole: req.body.userRole || null
+  };
+}
+
+async function getMeetingTitle(db, meetingId) {
+  const meeting = await db.get(
+    `
+    SELECT title
+    FROM meetings
+    WHERE id = ?
+    `,
+    [meetingId]
+  );
+
+  return meeting ? meeting.title : `ID ${meetingId}`;
+}
 
 function meetingAttachmentsRouter(db) {
   const router = express.Router();
@@ -71,7 +78,7 @@ function meetingAttachmentsRouter(db) {
       console.error('Błąd pobierania załączników:', error);
 
       res.status(500).json({
-        error: 'Nie udało się pobrać załączników spotkania.'
+        error: 'Nie udało się pobrać załączników.'
       });
     }
   });
@@ -81,20 +88,24 @@ function meetingAttachmentsRouter(db) {
       const meetingId = Number(req.body.meetingId);
 
       if (!meetingId) {
+        if (req.file) {
+          fs.unlinkSync(req.file.path);
+        }
+
         return res.status(400).json({
-          error: 'Nie podano identyfikatora spotkania.'
+          error: 'Nie wskazano spotkania.'
         });
       }
 
       if (!req.file) {
         return res.status(400).json({
-          error: 'Nie wybrano pliku.'
+          error: 'Nie przesłano pliku.'
         });
       }
 
       const meeting = await db.get(
         `
-        SELECT id
+        SELECT id, title
         FROM meetings
         WHERE id = ?
         `,
@@ -102,12 +113,14 @@ function meetingAttachmentsRouter(db) {
       );
 
       if (!meeting) {
+        fs.unlinkSync(req.file.path);
+
         return res.status(404).json({
-          error: 'Nie znaleziono wybranego spotkania.'
+          error: 'Nie znaleziono spotkania.'
         });
       }
 
-      const relativePath = `/uploads/${req.file.filename}`;
+      const filePath = `/uploads/${req.file.filename}`;
 
       const result = await db.run(
         `
@@ -116,15 +129,16 @@ function meetingAttachmentsRouter(db) {
           original_name,
           file_name,
           file_path,
-          mime_type
+          mime_type,
+          uploaded_at
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `,
         [
           meetingId,
           req.file.originalname,
           req.file.filename,
-          relativePath,
+          filePath,
           req.file.mimetype
         ]
       );
@@ -145,12 +159,23 @@ function meetingAttachmentsRouter(db) {
         [result.lastID]
       );
 
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'UPLOAD_ATTACHMENT',
+        entityType: 'MEETING_ATTACHMENT',
+        entityId: createdAttachment.id,
+        description: `Dodano załącznik "${createdAttachment.originalName}" do spotkania "${meeting.title}".`
+      });
+
       res.status(201).json(createdAttachment);
     } catch (error) {
       console.error('Błąd dodawania załącznika:', error);
 
       res.status(500).json({
-        error: error.message || 'Nie udało się dodać załącznika.'
+        error: 'Nie udało się dodać załącznika.'
       });
     }
   });
@@ -161,7 +186,11 @@ function meetingAttachmentsRouter(db) {
 
       const attachment = await db.get(
         `
-        SELECT id, file_name AS fileName
+        SELECT
+          id,
+          meeting_id AS meetingId,
+          original_name AS originalName,
+          file_name AS fileName
         FROM meeting_attachments
         WHERE id = ?
         `,
@@ -174,6 +203,7 @@ function meetingAttachmentsRouter(db) {
         });
       }
 
+      const meetingTitle = await getMeetingTitle(db, attachment.meetingId);
       const filePath = path.join(uploadDirectory, attachment.fileName);
 
       if (fs.existsSync(filePath)) {
@@ -187,6 +217,17 @@ function meetingAttachmentsRouter(db) {
         `,
         [id]
       );
+
+      const { userId, userRole } = getRequestUser(req);
+
+      await addAuditLog(db, {
+        userId,
+        userRole,
+        action: 'DELETE_ATTACHMENT',
+        entityType: 'MEETING_ATTACHMENT',
+        entityId: Number(id),
+        description: `Usunięto załącznik "${attachment.originalName}" ze spotkania "${meetingTitle}".`
+      });
 
       res.json({
         message: 'Załącznik został usunięty.'

@@ -35,6 +35,7 @@ export class AgentWorkTime implements OnInit {
 
   user: LoggedUser | null = null;
   entries: WorkTimeEntry[] = [];
+  workTimeSearchText = '';
 
   showForm = false;
   editMode = false;
@@ -64,6 +65,34 @@ export class AgentWorkTime implements OnInit {
     }
   }
 
+  get filteredEntries(): WorkTimeEntry[] {
+    const search = this.workTimeSearchText.trim().toLowerCase();
+
+    if (!search) {
+      return this.entries;
+    }
+
+    return this.entries.filter((entry) => {
+      const values = [
+        entry.agentName,
+        entry.workDate,
+        entry.startTime,
+        entry.endTime,
+        this.formatDate(entry.workDate),
+        this.formatHours(entry.durationHours),
+        entry.description
+      ];
+
+      return values.some(value =>
+        String(value || '').toLowerCase().includes(search)
+      );
+    });
+  }
+
+  clearWorkTimeSearch(): void {
+    this.workTimeSearchText = '';
+  }
+
   loadLoggedUser(): void {
     const userJson = localStorage.getItem('user');
 
@@ -73,6 +102,16 @@ export class AgentWorkTime implements OnInit {
     }
 
     this.user = JSON.parse(userJson);
+  }
+
+  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
+    const userJson = localStorage.getItem('user');
+    const user = userJson ? JSON.parse(userJson) : null;
+
+    return {
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null
+    };
   }
 
   loadEntries(): void {
@@ -144,7 +183,8 @@ export class AgentWorkTime implements OnInit {
 
     const payload = {
       ...this.entryForm,
-      agentId: this.user.id
+      agentId: this.user.id,
+      ...this.getLoggedUserPayload()
     };
 
     this.http.post<WorkTimeEntry>(this.workTimeApiUrl, payload).subscribe({
@@ -170,7 +210,8 @@ export class AgentWorkTime implements OnInit {
 
     const payload = {
       ...this.entryForm,
-      agentId: this.user.id
+      agentId: this.user.id,
+      ...this.getLoggedUserPayload()
     };
 
     this.http.put<WorkTimeEntry>(`${this.workTimeApiUrl}/${this.editedEntryId}`, payload).subscribe({
@@ -218,13 +259,17 @@ export class AgentWorkTime implements OnInit {
       return;
     }
 
+    const entryId = entry.id;
+
     const confirmDelete = confirm('Czy na pewno chcesz usunąć ten wpis czasu pracy?');
 
     if (!confirmDelete) {
       return;
     }
 
-    this.http.delete(`${this.workTimeApiUrl}/${entry.id}`).subscribe({
+    this.http.request('delete', `${this.workTimeApiUrl}/${entryId}`, {
+      body: this.getLoggedUserPayload()
+    }).subscribe({
       next: () => {
         this.selectedEntry = null;
         this.loadEntries();
