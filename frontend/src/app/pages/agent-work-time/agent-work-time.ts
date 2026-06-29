@@ -104,16 +104,6 @@ export class AgentWorkTime implements OnInit {
     this.user = JSON.parse(userJson);
   }
 
-  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
-    const userJson = localStorage.getItem('user');
-    const user = userJson ? JSON.parse(userJson) : null;
-
-    return {
-      userId: user?.id ?? null,
-      userRole: user?.role ?? null
-    };
-  }
-
   loadEntries(): void {
     if (!this.user) {
       return;
@@ -183,8 +173,7 @@ export class AgentWorkTime implements OnInit {
 
     const payload = {
       ...this.entryForm,
-      agentId: this.user.id,
-      ...this.getLoggedUserPayload()
+      agentId: this.user.id
     };
 
     this.http.post<WorkTimeEntry>(this.workTimeApiUrl, payload).subscribe({
@@ -210,8 +199,7 @@ export class AgentWorkTime implements OnInit {
 
     const payload = {
       ...this.entryForm,
-      agentId: this.user.id,
-      ...this.getLoggedUserPayload()
+      agentId: this.user.id
     };
 
     this.http.put<WorkTimeEntry>(`${this.workTimeApiUrl}/${this.editedEntryId}`, payload).subscribe({
@@ -267,9 +255,7 @@ export class AgentWorkTime implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.workTimeApiUrl}/${entryId}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.workTimeApiUrl}/${entryId}`).subscribe({
       next: () => {
         this.selectedEntry = null;
         this.loadEntries();

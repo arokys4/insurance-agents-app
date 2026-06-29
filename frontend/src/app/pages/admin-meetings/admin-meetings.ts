@@ -151,16 +151,6 @@ export class AdminMeetings implements OnInit {
     this.meetingSearchText = '';
   }
 
-  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
-    const userJson = localStorage.getItem('user');
-    const user = userJson ? JSON.parse(userJson) : null;
-
-    return {
-      userId: user?.id ?? null,
-      userRole: user?.role ?? null
-    };
-  }
-
   handleMeetingSaveError(error: any): void {
     console.error('Błąd zapisu spotkania:', error);
 
@@ -288,8 +278,7 @@ export class AdminMeetings implements OnInit {
 
   addMeeting(): void {
     const payload = {
-      ...this.meetingForm,
-      ...this.getLoggedUserPayload()
+      ...this.meetingForm
     };
 
     this.http.post<Meeting>(this.meetingsApiUrl, payload).subscribe({
@@ -309,8 +298,7 @@ export class AdminMeetings implements OnInit {
     }
 
     const payload = {
-      ...this.meetingForm,
-      ...this.getLoggedUserPayload()
+      ...this.meetingForm
     };
 
     this.http.put<Meeting>(`${this.meetingsApiUrl}/${this.editedMeetingId}`, payload).subscribe({
@@ -399,8 +387,7 @@ export class AdminMeetings implements OnInit {
     const selectedStatus = this.getPendingStatus(meeting);
 
     const payload = {
-      status: selectedStatus,
-      ...this.getLoggedUserPayload()
+      status: selectedStatus
     };
 
     this.http.patch<Meeting>(`${this.meetingsApiUrl}/${meeting.id}/status`, payload).subscribe({
@@ -468,8 +455,7 @@ export class AdminMeetings implements OnInit {
 
     const payload = {
       meetingId: this.selectedMeeting.id,
-      content,
-      ...this.getLoggedUserPayload()
+      content
     };
 
     this.http.post<MeetingNote>(this.notesApiUrl, payload).subscribe({
@@ -500,8 +486,7 @@ export class AdminMeetings implements OnInit {
     }
 
     const payload = {
-      content,
-      ...this.getLoggedUserPayload()
+      content
     };
 
     this.http.put<MeetingNote>(`${this.notesApiUrl}/${this.editedNoteId}`, payload).subscribe({
@@ -533,9 +518,7 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.notesApiUrl}/${noteId}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.notesApiUrl}/${noteId}`).subscribe({
       next: () => {
         this.loadNotes(this.selectedMeeting!.id!);
         this.clearNoteForm();
@@ -595,13 +578,9 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    const loggedUser = this.getLoggedUserPayload();
-
     const formData = new FormData();
     formData.append('meetingId', String(this.selectedMeeting.id));
     formData.append('file', this.selectedFile);
-    formData.append('userId', String(loggedUser.userId ?? ''));
-    formData.append('userRole', loggedUser.userRole ?? '');
 
     this.http.post<MeetingAttachment>(this.attachmentsApiUrl, formData).subscribe({
       next: () => {
@@ -638,9 +617,7 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.attachmentsApiUrl}/${attachmentId}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.attachmentsApiUrl}/${attachmentId}`).subscribe({
       next: () => {
         this.loadAttachments(this.selectedMeeting!.id!);
       },
@@ -674,9 +651,7 @@ export class AdminMeetings implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.meetingsApiUrl}/${meetingId}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.meetingsApiUrl}/${meetingId}`).subscribe({
       next: () => {
         this.selectedMeeting = null;
         this.meetingNotes = [];

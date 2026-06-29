@@ -625,8 +625,8 @@ function meetingsRouter(db) {
 
       if (oldStatus !== status) {
         await addAuditLog(db, {
-          userId: userId || null,
-          userRole: userRole || null,
+          userId: req.user?.id || null,
+          userRole: req.user?.role || null,
           action: 'UPDATE_MEETING_STATUS',
           entityType: 'MEETING',
           entityId: Number(id),

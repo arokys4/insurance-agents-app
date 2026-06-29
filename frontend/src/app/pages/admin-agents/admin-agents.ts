@@ -205,20 +205,9 @@ export class AdminAgents implements OnInit {
       .join(' ');
   }
 
-  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
-    const userJson = localStorage.getItem('user');
-    const user = userJson ? JSON.parse(userJson) : null;
-
-    return {
-      userId: user?.id ?? null,
-      userRole: user?.role ?? null
-    };
-  }
-
   addAgent(): void {
     const payload = {
-      ...this.agentForm,
-      ...this.getLoggedUserPayload()
+      ...this.agentForm
     };
 
     this.http.post<Agent>(this.agentsApiUrl, payload).subscribe({
@@ -243,8 +232,7 @@ export class AdminAgents implements OnInit {
     }
 
     const payload: any = {
-      ...this.agentForm,
-      ...this.getLoggedUserPayload()
+      ...this.agentForm
     };
 
     if (!payload.password) {
@@ -305,9 +293,7 @@ export class AdminAgents implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.agentsApiUrl}/${agent.id}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.agentsApiUrl}/${agent.id}`).subscribe({
       next: () => {
         this.selectedAgent = null;
         this.loadAgents();

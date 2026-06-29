@@ -92,16 +92,6 @@ export class AdminWorkTime implements OnInit {
     this.workTimeSearchText = '';
   }
 
-  getLoggedUserPayload(): { userId: number | null; userRole: string | null } {
-    const userJson = localStorage.getItem('user');
-    const user = userJson ? JSON.parse(userJson) : null;
-
-    return {
-      userId: user?.id ?? null,
-      userRole: user?.role ?? null
-    };
-  }
-
   loadAgents(): void {
     this.http.get<Agent[]>(this.agentsApiUrl).subscribe({
       next: (agents) => {
@@ -178,8 +168,7 @@ export class AdminWorkTime implements OnInit {
 
   addEntry(): void {
     const payload = {
-      ...this.entryForm,
-      ...this.getLoggedUserPayload()
+      ...this.entryForm
     };
 
     this.http.post<WorkTimeEntry>(this.workTimeApiUrl, payload).subscribe({
@@ -204,8 +193,7 @@ export class AdminWorkTime implements OnInit {
     }
 
     const payload = {
-      ...this.entryForm,
-      ...this.getLoggedUserPayload()
+      ...this.entryForm
     };
 
     this.http.put<WorkTimeEntry>(`${this.workTimeApiUrl}/${this.editedEntryId}`, payload).subscribe({
@@ -261,9 +249,7 @@ export class AdminWorkTime implements OnInit {
       return;
     }
 
-    this.http.request('delete', `${this.workTimeApiUrl}/${entryId}`, {
-      body: this.getLoggedUserPayload()
-    }).subscribe({
+    this.http.delete(`${this.workTimeApiUrl}/${entryId}`).subscribe({
       next: () => {
         this.selectedEntry = null;
         this.loadEntries();

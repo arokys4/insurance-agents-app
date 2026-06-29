@@ -1,11 +1,27 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
+function hasRole(expectedRole: 'ADMIN' | 'AGENT'): boolean {
+  const token = localStorage.getItem('token');
+  const userJson = localStorage.getItem('user');
+
+  if (!token || !userJson) {
+    return false;
+  }
+
+  try {
+    const user = JSON.parse(userJson);
+    return user.role === expectedRole;
+  } catch {
+    localStorage.clear();
+    return false;
+  }
+}
+
 export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
-  const role = localStorage.getItem('role');
 
-  if (role === 'ADMIN') {
+  if (hasRole('ADMIN')) {
     return true;
   }
 
@@ -15,9 +31,8 @@ export const adminGuard: CanActivateFn = () => {
 
 export const agentGuard: CanActivateFn = () => {
   const router = inject(Router);
-  const role = localStorage.getItem('role');
 
-  if (role === 'AGENT') {
+  if (hasRole('AGENT')) {
     return true;
   }
 

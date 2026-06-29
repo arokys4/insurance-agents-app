@@ -59,7 +59,6 @@ export class ChangePassword {
     }
 
     const payload = {
-      userId: user.id,
       newPassword: newPasswordValue,
       confirmPassword: confirmPasswordValue
     };
@@ -72,8 +71,6 @@ export class ChangePassword {
         };
 
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        localStorage.setItem('role', updatedUser.role);
-        localStorage.setItem('userId', String(updatedUser.id));
 
         this.successMessage = 'Hasło zostało zmienione.';
 

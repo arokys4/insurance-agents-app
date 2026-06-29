@@ -53,8 +53,6 @@ export class Login {
 
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('role', user.role);
-        localStorage.setItem('userId', String(user.id));
 
         if (user.mustChangePassword) {
           this.router.navigate(['/change-password']);
