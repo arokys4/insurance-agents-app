@@ -47,8 +47,8 @@ function reportsRouter(db) {
           agents.id AS agentId,
           agents.first_name || ' ' || agents.last_name AS agentName,
           COUNT(meetings.id) AS meetingsCount,
-          SUM(CASE WHEN meetings.status = 'Zaplanowane' THEN 1 ELSE 0 END) AS plannedMeetingsCount,
-          SUM(CASE WHEN meetings.status = 'Zakończone' THEN 1 ELSE 0 END) AS completedMeetingsCount
+          COALESCE(SUM(CASE WHEN meetings.status = 'Zaplanowane' THEN 1 ELSE 0 END), 0) AS plannedMeetingsCount,
+          COALESCE(SUM(CASE WHEN meetings.status = 'Zakończone' THEN 1 ELSE 0 END), 0) AS completedMeetingsCount
         FROM agents
         LEFT JOIN meetings ON meetings.agent_id = agents.id
         WHERE agents.role = 'AGENT'

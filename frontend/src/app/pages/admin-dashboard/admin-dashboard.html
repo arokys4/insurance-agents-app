@@ -58,8 +58,100 @@
       </div>
 
       <div class="stat-item">
+        <span>Zakończone</span>
+        <strong>{{ completedMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
         <span>Wpisy czasu pracy</span>
         <strong>{{ workTimeEntriesCount }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="reports-section">
+    <div class="section-heading">
+      <div>
+        <h2>Raport nadzoru</h2>
+        <p>Zestawienie aktywności agentów na podstawie spotkań i ewidencji czasu pracy</p>
+      </div>
+    </div>
+
+    <p class="error-message" *ngIf="reportErrorMessage">
+      {{ reportErrorMessage }}
+    </p>
+
+    <div class="reports-grid" *ngIf="!reportErrorMessage">
+      <div class="report-panel">
+        <div class="report-header">
+          <h3>Spotkania według agenta</h3>
+          <span>{{ meetingsCount }} razem</span>
+        </div>
+
+        <div class="report-table" *ngIf="meetingsByAgent.length > 0; else noMeetingsReport">
+          <div class="report-row table-head">
+            <span>Agent</span>
+            <span>Wszystkie</span>
+            <span>Zaplanowane</span>
+            <span>Zakończone</span>
+            <span>Realizacja</span>
+          </div>
+
+          <div class="report-row" *ngFor="let item of meetingsByAgent">
+            <span class="agent-name">{{ item.agentName }}</span>
+            <span>{{ item.meetingsCount }}</span>
+            <span>{{ item.plannedMeetingsCount }}</span>
+            <span>{{ item.completedMeetingsCount }}</span>
+            <span>
+              <span class="progress-label">{{ getMeetingCompletionPercent(item) }}%</span>
+              <span class="progress-track">
+                <span
+                  class="progress-fill"
+                  [style.width.%]="getMeetingCompletionPercent(item)"
+                ></span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <ng-template #noMeetingsReport>
+          <p class="empty-message">Brak danych o spotkaniach.</p>
+        </ng-template>
+      </div>
+
+      <div class="report-panel">
+        <div class="report-header">
+          <h3>Czas pracy według agenta</h3>
+          <span>{{ workTimeEntriesCount }} wpisów</span>
+        </div>
+
+        <div class="report-table work-time-table" *ngIf="workTimeByAgent.length > 0; else noWorkTimeReport">
+          <div class="report-row table-head">
+            <span>Agent</span>
+            <span>Wpisy</span>
+            <span>Łączny czas</span>
+            <span>Udział</span>
+          </div>
+
+          <div class="report-row" *ngFor="let item of workTimeByAgent">
+            <span class="agent-name">{{ item.agentName }}</span>
+            <span>{{ item.entriesCount }}</span>
+            <span>{{ formatHours(item.totalHours) }}</span>
+            <span>
+              <span class="progress-label">{{ getWorkTimePercent(item) }}%</span>
+              <span class="progress-track">
+                <span
+                  class="progress-fill work-time-fill"
+                  [style.width.%]="getWorkTimePercent(item)"
+                ></span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <ng-template #noWorkTimeReport>
+          <p class="empty-message">Brak danych o czasie pracy.</p>
+        </ng-template>
       </div>
     </div>
   </section>

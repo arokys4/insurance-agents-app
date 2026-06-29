@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { NgFor, NgIf } from '@angular/common';
 import { API_BASE_URL } from '../../config/api.config';
 
 interface LoggedUser {
@@ -43,22 +44,28 @@ interface AdminOverviewReport {
     completedMeetingsCount: number;
     workTimeEntriesCount: number;
   };
+  workTimeByAgent: WorkTimeReportItem[];
+  meetingsByAgent: MeetingsReportItem[];
 }
 
-interface WorkTimeEntry {
-  id?: number;
-  agentId: number | null;
-  agentName?: string;
-  workDate: string;
-  startTime: string;
-  endTime: string;
-  durationHours?: number;
-  description: string;
+interface WorkTimeReportItem {
+  agentId: number;
+  agentName: string;
+  entriesCount: number;
+  totalHours: number;
+}
+
+interface MeetingsReportItem {
+  agentId: number;
+  agentName: string;
+  meetingsCount: number;
+  plannedMeetingsCount: number;
+  completedMeetingsCount: number;
 }
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [],
+  imports: [NgFor, NgIf],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css'
 })
@@ -70,7 +77,11 @@ export class AdminDashboard implements OnInit {
   activeAgentsCount = 0;
   meetingsCount = 0;
   plannedMeetingsCount = 0;
+  completedMeetingsCount = 0;
   workTimeEntriesCount = 0;
+  workTimeByAgent: WorkTimeReportItem[] = [];
+  meetingsByAgent: MeetingsReportItem[] = [];
+  reportErrorMessage = '';
 
   constructor(
     private router: Router,
@@ -94,21 +105,56 @@ export class AdminDashboard implements OnInit {
   }
 
   loadDashboardStats(): void {
+    this.reportErrorMessage = '';
+
     this.http.get<AdminOverviewReport>(this.reportsApiUrl).subscribe({
       next: (report) => {
         this.activeAgentsCount = report.summary.activeAgentsCount;
         this.meetingsCount = report.summary.meetingsCount;
         this.plannedMeetingsCount = report.summary.plannedMeetingsCount;
+        this.completedMeetingsCount = report.summary.completedMeetingsCount;
         this.workTimeEntriesCount = report.summary.workTimeEntriesCount;
+        this.workTimeByAgent = report.workTimeByAgent;
+        this.meetingsByAgent = report.meetingsByAgent;
       },
       error: (error) => {
         console.error('Błąd pobierania raportu administratora:', error);
         this.activeAgentsCount = 0;
         this.meetingsCount = 0;
         this.plannedMeetingsCount = 0;
+        this.completedMeetingsCount = 0;
         this.workTimeEntriesCount = 0;
+        this.workTimeByAgent = [];
+        this.meetingsByAgent = [];
+        this.reportErrorMessage = 'Nie udało się pobrać raportu nadzoru.';
       }
     });
+  }
+
+  getMeetingCompletionPercent(item: MeetingsReportItem): number {
+    if (!item.meetingsCount) {
+      return 0;
+    }
+
+    return Math.round((item.completedMeetingsCount / item.meetingsCount) * 100);
+  }
+
+  getWorkTimePercent(item: WorkTimeReportItem): number {
+    const maxHours = Math.max(...this.workTimeByAgent.map(agent => agent.totalHours), 0);
+
+    if (!maxHours) {
+      return 0;
+    }
+
+    return Math.round((item.totalHours / maxHours) * 100);
+  }
+
+  formatHours(value: number): string {
+    const totalMinutes = Math.round((value || 0) * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours} godz. ${String(minutes).padStart(2, '0')} min`;
   }
 
   getLoggedUserName(): string {
