@@ -41,7 +41,10 @@ interface AdminOverviewReport {
     activeAgentsCount: number;
     meetingsCount: number;
     plannedMeetingsCount: number;
+    inProgressMeetingsCount: number;
     completedMeetingsCount: number;
+    postponedMeetingsCount: number;
+    cancelledMeetingsCount: number;
     workTimeEntriesCount: number;
   };
   workTimeByAgent: WorkTimeReportItem[];
@@ -60,7 +63,10 @@ interface MeetingsReportItem {
   agentName: string;
   meetingsCount: number;
   plannedMeetingsCount: number;
+  inProgressMeetingsCount: number;
   completedMeetingsCount: number;
+  postponedMeetingsCount: number;
+  cancelledMeetingsCount: number;
 }
 
 @Component({
@@ -77,10 +83,14 @@ export class AdminDashboard implements OnInit {
   activeAgentsCount = 0;
   meetingsCount = 0;
   plannedMeetingsCount = 0;
+  inProgressMeetingsCount = 0;
   completedMeetingsCount = 0;
+  postponedMeetingsCount = 0;
+  cancelledMeetingsCount = 0;
   workTimeEntriesCount = 0;
   workTimeByAgent: WorkTimeReportItem[] = [];
   meetingsByAgent: MeetingsReportItem[] = [];
+  reportInsights: string[] = [];
   reportErrorMessage = '';
 
   constructor(
@@ -112,23 +122,83 @@ export class AdminDashboard implements OnInit {
         this.activeAgentsCount = report.summary.activeAgentsCount;
         this.meetingsCount = report.summary.meetingsCount;
         this.plannedMeetingsCount = report.summary.plannedMeetingsCount;
+        this.inProgressMeetingsCount = report.summary.inProgressMeetingsCount;
         this.completedMeetingsCount = report.summary.completedMeetingsCount;
+        this.postponedMeetingsCount = report.summary.postponedMeetingsCount;
+        this.cancelledMeetingsCount = report.summary.cancelledMeetingsCount;
         this.workTimeEntriesCount = report.summary.workTimeEntriesCount;
         this.workTimeByAgent = report.workTimeByAgent;
         this.meetingsByAgent = report.meetingsByAgent;
+        this.reportInsights = this.buildReportInsights(report);
       },
       error: (error) => {
         console.error('Błąd pobierania raportu administratora:', error);
         this.activeAgentsCount = 0;
         this.meetingsCount = 0;
         this.plannedMeetingsCount = 0;
+        this.inProgressMeetingsCount = 0;
         this.completedMeetingsCount = 0;
+        this.postponedMeetingsCount = 0;
+        this.cancelledMeetingsCount = 0;
         this.workTimeEntriesCount = 0;
         this.workTimeByAgent = [];
         this.meetingsByAgent = [];
+        this.reportInsights = [];
         this.reportErrorMessage = 'Nie udało się pobrać raportu nadzoru.';
       }
     });
+  }
+
+  buildReportInsights(report: AdminOverviewReport): string[] {
+    const insights: string[] = [];
+    const summary = report.summary;
+    const completionPercent = this.getSystemMeetingCompletionPercent();
+    const agentsWithoutMeetings = report.meetingsByAgent.filter(agent => agent.meetingsCount === 0).length;
+    const agentsWithoutWorkTime = report.workTimeByAgent.filter(agent => agent.entriesCount === 0).length;
+    const mostLoadedAgent = report.workTimeByAgent.find(agent => agent.totalHours > 0);
+    const mostScheduledAgent = report.meetingsByAgent.find(agent => agent.meetingsCount > 0);
+
+    if (summary.meetingsCount > 0) {
+      insights.push(
+        `Realizacja spotkań wynosi ${completionPercent}%, czyli zakończono ${summary.completedMeetingsCount} z ${summary.meetingsCount} spotkań.`
+      );
+    } else {
+      insights.push('W systemie nie ma jeszcze spotkań do oceny realizacji.');
+    }
+
+    if (agentsWithoutMeetings > 0) {
+      insights.push(`${agentsWithoutMeetings} agentów nie ma jeszcze przypisanych spotkań.`);
+    }
+
+    if (agentsWithoutWorkTime > 0) {
+      insights.push(`${agentsWithoutWorkTime} agentów nie ma wpisów w ewidencji czasu pracy.`);
+    }
+
+    if (mostLoadedAgent) {
+      insights.push(
+        `Największe obciążenie czasem pracy ma ${mostLoadedAgent.agentName}: ${this.formatHours(mostLoadedAgent.totalHours)}.`
+      );
+    }
+
+    if (mostScheduledAgent) {
+      insights.push(
+        `Najwięcej spotkań przypisano do agenta ${mostScheduledAgent.agentName}: ${mostScheduledAgent.meetingsCount}.`
+      );
+    }
+
+    if (summary.meetingsCount > 0 && summary.completedMeetingsCount === 0) {
+      insights.push('Żadne spotkanie nie zostało jeszcze oznaczone jako zakończone.');
+    }
+
+    return insights;
+  }
+
+  getSystemMeetingCompletionPercent(): number {
+    if (!this.meetingsCount) {
+      return 0;
+    }
+
+    return Math.round((this.completedMeetingsCount / this.meetingsCount) * 100);
   }
 
   getMeetingCompletionPercent(item: MeetingsReportItem): number {

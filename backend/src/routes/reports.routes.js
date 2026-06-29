@@ -12,7 +12,10 @@ function reportsRouter(db) {
           (SELECT COUNT(*) FROM agents WHERE role = 'AGENT' AND status = 'Aktywny') AS activeAgentsCount,
           (SELECT COUNT(*) FROM meetings) AS meetingsCount,
           (SELECT COUNT(*) FROM meetings WHERE status = 'Zaplanowane') AS plannedMeetingsCount,
+          (SELECT COUNT(*) FROM meetings WHERE status = 'W realizacji') AS inProgressMeetingsCount,
           (SELECT COUNT(*) FROM meetings WHERE status = 'Zakończone') AS completedMeetingsCount,
+          (SELECT COUNT(*) FROM meetings WHERE status = 'Przełożone') AS postponedMeetingsCount,
+          (SELECT COUNT(*) FROM meetings WHERE status = 'Anulowane') AS cancelledMeetingsCount,
           (SELECT COUNT(*) FROM work_time_entries) AS workTimeEntriesCount
         `
       );
@@ -48,7 +51,10 @@ function reportsRouter(db) {
           agents.first_name || ' ' || agents.last_name AS agentName,
           COUNT(meetings.id) AS meetingsCount,
           COALESCE(SUM(CASE WHEN meetings.status = 'Zaplanowane' THEN 1 ELSE 0 END), 0) AS plannedMeetingsCount,
-          COALESCE(SUM(CASE WHEN meetings.status = 'Zakończone' THEN 1 ELSE 0 END), 0) AS completedMeetingsCount
+          COALESCE(SUM(CASE WHEN meetings.status = 'W realizacji' THEN 1 ELSE 0 END), 0) AS inProgressMeetingsCount,
+          COALESCE(SUM(CASE WHEN meetings.status = 'Zakończone' THEN 1 ELSE 0 END), 0) AS completedMeetingsCount,
+          COALESCE(SUM(CASE WHEN meetings.status = 'Przełożone' THEN 1 ELSE 0 END), 0) AS postponedMeetingsCount,
+          COALESCE(SUM(CASE WHEN meetings.status = 'Anulowane' THEN 1 ELSE 0 END), 0) AS cancelledMeetingsCount
         FROM agents
         LEFT JOIN meetings ON meetings.agent_id = agents.id
         WHERE agents.role = 'AGENT'

@@ -91,7 +91,7 @@
         </div>
 
         <div class="form-field">
-          <label for="startTime">Od</label>
+          <label for="startTime">Godzina rozpoczęcia</label>
           <input
             id="startTime"
             name="startTime"
@@ -101,7 +101,7 @@
         </div>
 
         <div class="form-field">
-          <label for="endTime">Do</label>
+          <label for="endTime">Godzina zakończenia</label>
           <input
             id="endTime"
             name="endTime"
@@ -211,11 +211,11 @@
     </div>
 
     <p class="empty-message" *ngIf="entries.length === 0">
-      Brak wpisów czasu pracy.
+      Brak wpisów czasu pracy. Dodaj wpis, aby rozpocząć ewidencję godzin agentów.
     </p>
 
     <p class="empty-message" *ngIf="entries.length > 0 && filteredEntries.length === 0">
-      Brak wpisów pasujących do wyszukiwania.
+      Brak wpisów pasujących do wyszukiwania. Zmień frazę lub wyczyść wyszukiwanie.
     </p>
   </section>
 </div>

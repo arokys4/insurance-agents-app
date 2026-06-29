@@ -14,23 +14,28 @@
 
   <section class="cards">
     <div class="card" (click)="goToAgents()">
-      Agenci
+      <strong>Agenci</strong>
+      <span>Dodawanie, edycja i status kont agentów</span>
     </div>
 
     <div class="card" (click)="goToMeetings()">
-      Spotkania
+      <strong>Spotkania</strong>
+      <span>Planowanie pracy i kontrola terminów</span>
     </div>
 
     <div class="card" (click)="goToCalendar()">
-      Kalendarz
+      <strong>Kalendarz</strong>
+      <span>Tygodniowy podgląd zaplanowanych spotkań</span>
     </div>
 
     <div class="card" (click)="goToWorkTime()">
-      Ewidencja czasu pracy
+      <strong>Ewidencja czasu pracy</strong>
+      <span>Rejestrowanie godzin pracy agentów</span>
     </div>
 
     <div class="card" (click)="goToAuditLogs()">
-      Audyt zmian
+      <strong>Audyt zmian</strong>
+      <span>Historia najważniejszych operacji w systemie</span>
     </div>
       
   </section>
@@ -58,6 +63,11 @@
       </div>
 
       <div class="stat-item">
+        <span>W realizacji</span>
+        <strong>{{ inProgressMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
         <span>Zakończone</span>
         <strong>{{ completedMeetingsCount }}</strong>
       </div>
@@ -73,7 +83,7 @@
     <div class="section-heading">
       <div>
         <h2>Raport nadzoru</h2>
-        <p>Zestawienie aktywności agentów na podstawie spotkań i ewidencji czasu pracy</p>
+        <p>Raport obejmuje wszystkie dane zapisane w systemie: spotkania, statusy oraz wpisy czasu pracy.</p>
       </div>
     </div>
 
@@ -81,11 +91,20 @@
       {{ reportErrorMessage }}
     </p>
 
+    <div class="insights-box" *ngIf="!reportErrorMessage && reportInsights.length > 0">
+      <h3>Wnioski z raportu</h3>
+      <ul>
+        <li *ngFor="let insight of reportInsights">
+          {{ insight }}
+        </li>
+      </ul>
+    </div>
+
     <div class="reports-grid" *ngIf="!reportErrorMessage">
       <div class="report-panel">
         <div class="report-header">
           <h3>Spotkania według agenta</h3>
-          <span>{{ meetingsCount }} razem</span>
+          <span>{{ getSystemMeetingCompletionPercent() }}% realizacji</span>
         </div>
 
         <div class="report-table" *ngIf="meetingsByAgent.length > 0; else noMeetingsReport">
@@ -93,7 +112,10 @@
             <span>Agent</span>
             <span>Wszystkie</span>
             <span>Zaplanowane</span>
+            <span>W realizacji</span>
             <span>Zakończone</span>
+            <span>Przełożone</span>
+            <span>Anulowane</span>
             <span>Realizacja</span>
           </div>
 
@@ -101,7 +123,10 @@
             <span class="agent-name">{{ item.agentName }}</span>
             <span>{{ item.meetingsCount }}</span>
             <span>{{ item.plannedMeetingsCount }}</span>
+            <span>{{ item.inProgressMeetingsCount }}</span>
             <span>{{ item.completedMeetingsCount }}</span>
+            <span>{{ item.postponedMeetingsCount }}</span>
+            <span>{{ item.cancelledMeetingsCount }}</span>
             <span>
               <span class="progress-label">{{ getMeetingCompletionPercent(item) }}%</span>
               <span class="progress-track">
@@ -130,7 +155,7 @@
             <span>Agent</span>
             <span>Wpisy</span>
             <span>Łączny czas</span>
-            <span>Udział</span>
+            <span>Obciążenie</span>
           </div>
 
           <div class="report-row" *ngFor="let item of workTimeByAgent">
@@ -152,6 +177,10 @@
         <ng-template #noWorkTimeReport>
           <p class="empty-message">Brak danych o czasie pracy.</p>
         </ng-template>
+
+        <p class="report-help">
+          Obciążenie porównuje łączny czas pracy agenta z agentem, który ma najwięcej zarejestrowanych godzin.
+        </p>
       </div>
     </div>
   </section>

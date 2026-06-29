@@ -1,7 +1,7 @@
 <div class="page">
   <header class="header">
     <div>
-      <h1>Dokumentacja</h1>
+      <h1>Dokumentacja spotkań</h1>
       <p *ngIf="user">
         Dokumentacja spotkań agenta: {{ user.firstName }} {{ user.lastName }}
       </p>
@@ -89,11 +89,11 @@
     </div>
 
     <p class="empty-message" *ngIf="meetings.length === 0">
-      Brak spotkań do wyświetlenia.
+      Brak spotkań do wyświetlenia. Dokumentacja pojawi się po przypisaniu spotkań przez administratora.
     </p>
 
     <p class="empty-message" *ngIf="meetings.length > 0 && filteredMeetings.length === 0">
-      Brak dokumentacji pasującej do wyszukiwania.
+      Brak dokumentacji pasującej do wyszukiwania. Zmień frazę lub wyczyść wyszukiwanie.
     </p>
   </section>
 
