@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NgIf } from '@angular/common';
+import { API_BASE_URL } from '../../config/api.config';
 
 interface LoginResponse {
   token: string;
@@ -23,7 +24,7 @@ interface LoginResponse {
   styleUrl: './login.css'
 })
 export class Login {
-  private loginApiUrl = 'http://localhost:4000/api/auth/login';
+  private loginApiUrl = `${API_BASE_URL}/auth/login`;
 
   email = '';
   password = '';

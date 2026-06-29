@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../config/api.config';
 
 interface AuditLog {
   id: number;
@@ -23,7 +24,7 @@ interface AuditLog {
   styleUrl: './admin-audit-logs.css'
 })
 export class AdminAuditLogs implements OnInit {
-  private auditLogsApiUrl = 'http://localhost:4000/api/audit-logs';
+  private auditLogsApiUrl = `${API_BASE_URL}/audit-logs`;
 
   logs: AuditLog[] = [];
   searchText = '';

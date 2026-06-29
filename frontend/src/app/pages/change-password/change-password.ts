@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../config/api.config';
 
 @Component({
   selector: 'app-change-password',
@@ -11,7 +12,7 @@ import { HttpClient } from '@angular/common/http';
   styleUrl: './change-password.css'
 })
 export class ChangePassword {
-  private authApiUrl = 'http://localhost:4000/api/auth';
+  private authApiUrl = `${API_BASE_URL}/auth`;
 
   newPassword = '';
   confirmPassword = '';

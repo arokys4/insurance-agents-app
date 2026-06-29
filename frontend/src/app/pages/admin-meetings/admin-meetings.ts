@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL, BACKEND_BASE_URL } from '../../config/api.config';
 
 interface Agent {
   id?: number;
@@ -60,11 +61,11 @@ interface MeetingConflictInfo {
   styleUrl: './admin-meetings.css'
 })
 export class AdminMeetings implements OnInit {
-  private meetingsApiUrl = 'http://localhost:4000/api/meetings';
-  private agentsApiUrl = 'http://localhost:4000/api/agents';
-  private notesApiUrl = 'http://localhost:4000/api/meeting-notes';
-  private attachmentsApiUrl = 'http://localhost:4000/api/meeting-attachments';
-  private backendUrl = 'http://localhost:4000';
+  private meetingsApiUrl = `${API_BASE_URL}/meetings`;
+  private agentsApiUrl = `${API_BASE_URL}/agents`;
+  private notesApiUrl = `${API_BASE_URL}/meeting-notes`;
+  private attachmentsApiUrl = `${API_BASE_URL}/meeting-attachments`;
+  private backendUrl = BACKEND_BASE_URL;
 
   meetings: Meeting[] = [];
   meetingSearchText = '';

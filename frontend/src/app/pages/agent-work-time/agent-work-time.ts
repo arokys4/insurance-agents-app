@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../config/api.config';
 
 interface LoggedUser {
   id: number;
@@ -31,7 +32,7 @@ interface WorkTimeEntry {
   styleUrl: './agent-work-time.css'
 })
 export class AgentWorkTime implements OnInit {
-  private workTimeApiUrl = 'http://localhost:4000/api/work-time';
+  private workTimeApiUrl = `${API_BASE_URL}/work-time`;
 
   user: LoggedUser | null = null;
   entries: WorkTimeEntry[] = [];

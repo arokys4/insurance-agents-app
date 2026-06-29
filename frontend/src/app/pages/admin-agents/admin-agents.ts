@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../config/api.config';
 
 interface Agent {
   id?: number;
@@ -23,7 +24,7 @@ interface Agent {
   styleUrl: './admin-agents.css'
 })
 export class AdminAgents implements OnInit {
-  private agentsApiUrl = 'http://localhost:4000/api/agents';
+  private agentsApiUrl = `${API_BASE_URL}/agents`;
 
   agents: Agent[] = [];
   agentSearchText = '';

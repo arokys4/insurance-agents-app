@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../config/api.config';
 
 interface LoggedUser {
   id: number;
@@ -62,7 +63,7 @@ interface WorkTimeEntry {
   styleUrl: './admin-dashboard.css'
 })
 export class AdminDashboard implements OnInit {
-  private reportsApiUrl = 'http://localhost:4000/api/reports/overview';
+  private reportsApiUrl = `${API_BASE_URL}/reports/overview`;
 
   user: LoggedUser | null = null;
 
