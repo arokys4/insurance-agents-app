@@ -28,8 +28,8 @@ function validatePasswordStrength(password) {
 
 function getRequestUser(req) {
   return {
-    userId: req.body.userId || null,
-    userRole: req.body.userRole || null
+    userId: req.user?.id || null,
+    userRole: req.user?.role || null
   };
 }
 

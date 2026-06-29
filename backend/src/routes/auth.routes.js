@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const { createAuthToken, requireAuth } = require('../utils/auth');
 
 function validatePasswordStrength(password) {
   if (!password || password.length < 8) {
@@ -82,15 +83,18 @@ function authRouter(db) {
         });
       }
 
+      const responseUser = {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        mustChangePassword: Boolean(user.mustChangePassword)
+      };
+
       res.json({
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          mustChangePassword: Boolean(user.mustChangePassword)
-        }
+        token: createAuthToken(responseUser),
+        user: responseUser
       });
     } catch (error) {
       console.error('Błąd logowania:', error);
@@ -103,11 +107,11 @@ function authRouter(db) {
 
   async function changePasswordHandler(req, res) {
     try {
-      const userId = Number(req.body.userId);
+      const userId = req.user.id;
       const newPassword = req.body.newPassword || '';
       const confirmPassword = req.body.confirmPassword || req.body.repeatPassword || '';
 
-      if (!userId || !newPassword || !confirmPassword) {
+      if (!newPassword || !confirmPassword) {
         return res.status(400).json({
           error: 'Uzupełnij wszystkie pola.'
         });
@@ -167,8 +171,8 @@ function authRouter(db) {
     }
   }
 
-  router.post('/change-password', changePasswordHandler);
-  router.patch('/change-password', changePasswordHandler);
+  router.post('/change-password', requireAuth, changePasswordHandler);
+  router.patch('/change-password', requireAuth, changePasswordHandler);
 
   return router;
 }

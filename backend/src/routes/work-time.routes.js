@@ -3,9 +3,23 @@ const { addAuditLog } = require('../utils/audit');
 
 function getRequestUser(req) {
   return {
-    userId: req.body.userId || null,
-    userRole: req.body.userRole || null
+    userId: req.user?.id || null,
+    userRole: req.user?.role || null
   };
+}
+
+function isAdmin(req) {
+  return req.user?.role === 'ADMIN';
+}
+
+function canAccessAgent(req, agentId) {
+  return isAdmin(req) || Number(req.user?.id) === Number(agentId);
+}
+
+function denyAccess(res) {
+  return res.status(403).json({
+    error: 'Brak uprawnień do ewidencji czasu pracy wybranego agenta.'
+  });
 }
 
 function calculateDurationHours(workDate, startTime, endTime) {
@@ -100,6 +114,9 @@ function workTimeRouter(db) {
 
   router.get('/', async (req, res) => {
     try {
+      const whereClause = isAdmin(req) ? '' : 'WHERE work_time_entries.agent_id = ?';
+      const params = isAdmin(req) ? [] : [req.user.id];
+
       const entries = await db.all(
         `
         SELECT
@@ -112,8 +129,10 @@ function workTimeRouter(db) {
           work_time_entries.description
         FROM work_time_entries
         JOIN agents ON agents.id = work_time_entries.agent_id
+        ${whereClause}
         ORDER BY work_time_entries.work_date DESC, work_time_entries.start_time DESC
-        `
+        `,
+        params
       );
 
       res.json(entries.map(mapWorkTimeEntry));
@@ -129,6 +148,10 @@ function workTimeRouter(db) {
   router.get('/agent/:agentId', async (req, res) => {
     try {
       const { agentId } = req.params;
+
+      if (!canAccessAgent(req, agentId)) {
+        return denyAccess(res);
+      }
 
       const entries = await db.all(
         `
@@ -175,6 +198,10 @@ function workTimeRouter(db) {
         endTime,
         description
       } = validation.entry;
+
+      if (!canAccessAgent(req, agentId)) {
+        return res.status(403).json({ error: 'Nie możesz przypisać wpisu innemu agentowi.' });
+      }
 
       const agent = await db.get(
         `
@@ -252,6 +279,10 @@ function workTimeRouter(db) {
         });
       }
 
+      if (!canAccessAgent(req, existingEntry.agentId)) {
+        return res.status(403).json({ error: 'Nie możesz edytować czasu pracy innego agenta.' });
+      }
+
       const validation = validateWorkTimeData(req.body);
 
       if (!validation.valid) {
@@ -267,6 +298,10 @@ function workTimeRouter(db) {
         endTime,
         description
       } = validation.entry;
+
+      if (!canAccessAgent(req, agentId)) {
+        return res.status(403).json({ error: 'Nie możesz przypisać wpisu innemu agentowi.' });
+      }
 
       const agent = await db.get(
         `
@@ -343,6 +378,10 @@ function workTimeRouter(db) {
         return res.status(404).json({
           error: 'Nie znaleziono wpisu czasu pracy.'
         });
+      }
+
+      if (!canAccessAgent(req, entry.agentId)) {
+        return res.status(403).json({ error: 'Nie możesz usunąć czasu pracy innego agenta.' });
       }
 
       await db.run(

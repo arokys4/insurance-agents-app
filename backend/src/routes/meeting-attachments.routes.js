@@ -31,9 +31,36 @@ const upload = multer({
 
 function getRequestUser(req) {
   return {
-    userId: req.body.userId || null,
-    userRole: req.body.userRole || null
+    userId: req.user?.id || null,
+    userRole: req.user?.role || null
   };
+}
+
+function isAdmin(req) {
+  return req.user?.role === 'ADMIN';
+}
+
+async function canAccessMeeting(db, req, meetingId) {
+  if (isAdmin(req)) {
+    return true;
+  }
+
+  const meeting = await db.get(
+    `
+    SELECT agent_id AS agentId
+    FROM meetings
+    WHERE id = ?
+    `,
+    [meetingId]
+  );
+
+  return meeting && Number(meeting.agentId) === Number(req.user?.id);
+}
+
+function denyAccess(res) {
+  return res.status(403).json({
+    error: 'Brak uprawnień do załączników wybranego spotkania.'
+  });
 }
 
 async function getMeetingTitle(db, meetingId) {
@@ -55,6 +82,10 @@ function meetingAttachmentsRouter(db) {
   router.get('/meeting/:meetingId', async (req, res) => {
     try {
       const { meetingId } = req.params;
+
+      if (!(await canAccessMeeting(db, req, meetingId))) {
+        return denyAccess(res);
+      }
 
       const attachments = await db.all(
         `
@@ -118,6 +149,11 @@ function meetingAttachmentsRouter(db) {
         return res.status(404).json({
           error: 'Nie znaleziono spotkania.'
         });
+      }
+
+      if (!(await canAccessMeeting(db, req, meetingId))) {
+        fs.unlinkSync(req.file.path);
+        return res.status(403).json({ error: 'Brak uprawnień do dodania załącznika do tego spotkania.' });
       }
 
       const filePath = `/uploads/${req.file.filename}`;
@@ -201,6 +237,10 @@ function meetingAttachmentsRouter(db) {
         return res.status(404).json({
           error: 'Nie znaleziono załącznika.'
         });
+      }
+
+      if (!(await canAccessMeeting(db, req, attachment.meetingId))) {
+        return denyAccess(res);
       }
 
       const meetingTitle = await getMeetingTitle(db, attachment.meetingId);

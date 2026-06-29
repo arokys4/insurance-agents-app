@@ -7,9 +7,23 @@ const uploadDirectory = path.join(__dirname, '../../uploads');
 
 function getRequestUser(req) {
   return {
-    userId: req.body.userId || null,
-    userRole: req.body.userRole || null
+    userId: req.user?.id || null,
+    userRole: req.user?.role || null
   };
+}
+
+function isAdmin(req) {
+  return req.user?.role === 'ADMIN';
+}
+
+function canAccessAgent(req, agentId) {
+  return isAdmin(req) || Number(req.user?.id) === Number(agentId);
+}
+
+function denyAccess(res) {
+  return res.status(403).json({
+    error: 'Brak uprawnień do danych wybranego agenta.'
+  });
 }
 
 function validateMeetingData(data) {
@@ -229,6 +243,9 @@ function meetingsRouter(db) {
 
   router.get('/', async (req, res) => {
     try {
+      const whereClause = isAdmin(req) ? '' : 'WHERE meetings.agent_id = ?';
+      const params = isAdmin(req) ? [] : [req.user.id];
+
       const meetings = await db.all(
         `
         SELECT
@@ -243,8 +260,10 @@ function meetingsRouter(db) {
           agents.first_name || ' ' || agents.last_name AS agentName
         FROM meetings
         JOIN agents ON agents.id = meetings.agent_id
+        ${whereClause}
         ORDER BY meetings.start_date ASC
-        `
+        `,
+        params
       );
 
       res.json(meetings);
@@ -260,6 +279,10 @@ function meetingsRouter(db) {
   router.get('/agent/:agentId', async (req, res) => {
     try {
       const { agentId } = req.params;
+
+      if (!canAccessAgent(req, agentId)) {
+        return denyAccess(res);
+      }
 
       const meetings = await db.all(
         `
@@ -303,6 +326,10 @@ function meetingsRouter(db) {
         });
       }
 
+      if (!canAccessAgent(req, meeting.agentId)) {
+        return denyAccess(res);
+      }
+
       res.json(meeting);
     } catch (error) {
       console.error('Błąd pobierania spotkania:', error);
@@ -315,6 +342,10 @@ function meetingsRouter(db) {
 
   router.post('/', async (req, res) => {
     try {
+      if (!isAdmin(req)) {
+        return res.status(403).json({ error: 'Tylko administrator może dodawać spotkania.' });
+      }
+
       const validation = validateMeetingData(req.body);
 
       if (!validation.valid) {
@@ -420,6 +451,10 @@ function meetingsRouter(db) {
 
   router.put('/:id', async (req, res) => {
     try {
+      if (!isAdmin(req)) {
+        return res.status(403).json({ error: 'Tylko administrator może edytować spotkania.' });
+      }
+
       const { id } = req.params;
 
       const validation = validateMeetingData(req.body);
@@ -538,7 +573,7 @@ function meetingsRouter(db) {
   router.patch('/:id/status', async (req, res) => {
     try {
       const { id } = req.params;
-      const { status, userId, userRole } = req.body;
+      const { status } = req.body;
 
       const allowedStatuses = [
         'Zaplanowane',
@@ -559,7 +594,8 @@ function meetingsRouter(db) {
         SELECT
           id,
           title,
-          status
+          status,
+          agent_id AS agentId
         FROM meetings
         WHERE id = ?
         `,
@@ -570,6 +606,10 @@ function meetingsRouter(db) {
         return res.status(404).json({
           error: 'Nie znaleziono spotkania.'
         });
+      }
+
+      if (!canAccessAgent(req, meeting.agentId)) {
+        return denyAccess(res);
       }
 
       const oldStatus = meeting.status;
@@ -608,6 +648,10 @@ function meetingsRouter(db) {
 
   router.delete('/:id', async (req, res) => {
     try {
+      if (!isAdmin(req)) {
+        return res.status(403).json({ error: 'Tylko administrator może usuwać spotkania.' });
+      }
+
       const { id } = req.params;
 
       const meeting = await getMeetingById(db, id);

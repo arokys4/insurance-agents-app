@@ -33,6 +33,17 @@ interface Meeting {
   agentName?: string;
 }
 
+interface AdminOverviewReport {
+  summary: {
+    agentsCount: number;
+    activeAgentsCount: number;
+    meetingsCount: number;
+    plannedMeetingsCount: number;
+    completedMeetingsCount: number;
+    workTimeEntriesCount: number;
+  };
+}
+
 interface WorkTimeEntry {
   id?: number;
   agentId: number | null;
@@ -51,9 +62,7 @@ interface WorkTimeEntry {
   styleUrl: './admin-dashboard.css'
 })
 export class AdminDashboard implements OnInit {
-  private agentsApiUrl = 'http://localhost:4000/api/agents';
-  private meetingsApiUrl = 'http://localhost:4000/api/meetings';
-  private workTimeApiUrl = 'http://localhost:4000/api/work-time';
+  private reportsApiUrl = 'http://localhost:4000/api/reports/overview';
 
   user: LoggedUser | null = null;
 
@@ -84,49 +93,18 @@ export class AdminDashboard implements OnInit {
   }
 
   loadDashboardStats(): void {
-    this.loadAgentsStats();
-    this.loadMeetingsStats();
-    this.loadWorkTimeStats();
-  }
-
-  loadAgentsStats(): void {
-    this.http.get<Agent[]>(this.agentsApiUrl).subscribe({
-      next: (agents) => {
-        this.activeAgentsCount = agents.filter(agent =>
-          agent.status === 'Aktywny' &&
-          agent.role !== 'ADMIN'
-        ).length;
+    this.http.get<AdminOverviewReport>(this.reportsApiUrl).subscribe({
+      next: (report) => {
+        this.activeAgentsCount = report.summary.activeAgentsCount;
+        this.meetingsCount = report.summary.meetingsCount;
+        this.plannedMeetingsCount = report.summary.plannedMeetingsCount;
+        this.workTimeEntriesCount = report.summary.workTimeEntriesCount;
       },
       error: (error) => {
-        console.error('Błąd pobierania statystyk agentów:', error);
+        console.error('Błąd pobierania raportu administratora:', error);
         this.activeAgentsCount = 0;
-      }
-    });
-  }
-
-  loadMeetingsStats(): void {
-    this.http.get<Meeting[]>(this.meetingsApiUrl).subscribe({
-      next: (meetings) => {
-        this.meetingsCount = meetings.length;
-        this.plannedMeetingsCount = meetings.filter(meeting =>
-          meeting.status === 'Zaplanowane'
-        ).length;
-      },
-      error: (error) => {
-        console.error('Błąd pobierania statystyk spotkań:', error);
         this.meetingsCount = 0;
         this.plannedMeetingsCount = 0;
-      }
-    });
-  }
-
-  loadWorkTimeStats(): void {
-    this.http.get<WorkTimeEntry[]>(this.workTimeApiUrl).subscribe({
-      next: (entries) => {
-        this.workTimeEntriesCount = entries.length;
-      },
-      error: (error) => {
-        console.error('Błąd pobierania statystyk czasu pracy:', error);
         this.workTimeEntriesCount = 0;
       }
     });

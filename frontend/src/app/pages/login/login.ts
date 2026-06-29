@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { NgIf } from '@angular/common';
 
 interface LoginResponse {
+  token: string;
   user: {
     id: number;
     firstName: string;
@@ -50,6 +51,7 @@ export class Login {
       next: (response) => {
         const user = response.user;
 
+        localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('role', user.role);
         localStorage.setItem('userId', String(user.id));
