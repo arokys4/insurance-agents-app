@@ -25,6 +25,7 @@ function reportsRouter(db) {
         SELECT
           agents.id AS agentId,
           agents.first_name || ' ' || agents.last_name AS agentName,
+          agents.status AS agentStatus,
           COUNT(work_time_entries.id) AS entriesCount,
           ROUND(
             COALESCE(
@@ -49,6 +50,7 @@ function reportsRouter(db) {
         SELECT
           agents.id AS agentId,
           agents.first_name || ' ' || agents.last_name AS agentName,
+          agents.status AS agentStatus,
           COUNT(meetings.id) AS meetingsCount,
           COALESCE(SUM(CASE WHEN meetings.status = 'Zaplanowane' THEN 1 ELSE 0 END), 0) AS plannedMeetingsCount,
           COALESCE(SUM(CASE WHEN meetings.status = 'W realizacji' THEN 1 ELSE 0 END), 0) AS inProgressMeetingsCount,

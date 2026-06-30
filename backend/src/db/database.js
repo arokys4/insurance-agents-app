@@ -381,6 +381,38 @@ async function createDemoData(db) {
     status: 'Nieaktywny'
   }, hashedPassword);
 
+  const tomaszId = await createDemoAgent(db, {
+    firstName: 'Tomasz',
+    lastName: 'Kaczmarek',
+    email: 'tomasz.kaczmarek@firma.pl',
+    phone: '504555666',
+    status: 'Aktywny'
+  }, hashedPassword);
+
+  const katarzynaId = await createDemoAgent(db, {
+    firstName: 'Katarzyna',
+    lastName: 'Lewandowska',
+    email: 'katarzyna.lewandowska@firma.pl',
+    phone: '505666777',
+    status: 'Aktywny'
+  }, hashedPassword);
+
+  const pawelId = await createDemoAgent(db, {
+    firstName: 'Paweł',
+    lastName: 'Wójcik',
+    email: 'pawel.wojcik@firma.pl',
+    phone: '506777888',
+    status: 'Aktywny'
+  }, hashedPassword);
+
+  const ewaId = await createDemoAgent(db, {
+    firstName: 'Ewa',
+    lastName: 'Kamińska',
+    email: 'ewa.kaminska@firma.pl',
+    phone: '507888999',
+    status: 'Nieaktywny'
+  }, hashedPassword);
+
   const completedMeetingId = await createDemoMeeting(db, {
     title: 'Omówienie polisy komunikacyjnej',
     description: 'Spotkanie z klientem dotyczące odnowienia polisy OC/AC.',
@@ -431,6 +463,46 @@ async function createDemoData(db) {
     agentId: mariaId
   });
 
+  await createDemoMeeting(db, {
+    title: 'Analiza potrzeb klienta firmowego',
+    description: 'Rozmowa dotycząca pakietu ubezpieczeń dla małej firmy.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(1), 12, 0),
+    endDate: formatDateTime(addDays(1), 13, 0),
+    status: 'Zaplanowane',
+    agentId: tomaszId
+  });
+
+  await createDemoMeeting(db, {
+    title: 'Konsultacja ubezpieczenia na życie',
+    description: 'Omówienie zakresu ochrony i wariantów składki.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(-1), 11, 0),
+    endDate: formatDateTime(addDays(-1), 12, 0),
+    status: 'Zakończone',
+    agentId: katarzynaId
+  });
+
+  await createDemoMeeting(db, {
+    title: 'Aktualizacja dokumentów klienta',
+    description: 'Uzupełnienie brakujących danych do dokumentacji polisy.',
+    meetingType: 'Inna sprawa',
+    startDate: formatDateTime(addDays(4), 10, 0),
+    endDate: formatDateTime(addDays(4), 10, 45),
+    status: 'Zaplanowane',
+    agentId: pawelId
+  });
+
+  await createDemoMeeting(db, {
+    title: 'Anulowana konsultacja majątkowa',
+    description: 'Klient odwołał spotkanie z powodu zmiany terminu wyjazdu.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(2), 15, 0),
+    endDate: formatDateTime(addDays(2), 16, 0),
+    status: 'Anulowane',
+    agentId: ewaId
+  });
+
   await createDemoMeetingNote(
     db,
     completedMeetingId,
@@ -473,6 +545,30 @@ async function createDemoData(db) {
     startTime: '08:30',
     endTime: '14:30',
     description: 'Oględziny szkody, dokumentacja i aktualizacja statusów spotkań.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: tomaszId,
+    workDate: formatDate(addDays(-1)),
+    startTime: '08:00',
+    endTime: '15:30',
+    description: 'Spotkania z klientami firmowymi i przygotowanie ofert.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: katarzynaId,
+    workDate: formatDate(addDays(-1)),
+    startTime: '10:00',
+    endTime: '17:00',
+    description: 'Konsultacje ubezpieczeń życiowych i aktualizacja notatek.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: pawelId,
+    workDate: formatDate(addDays(-2)),
+    startTime: '09:00',
+    endTime: '13:30',
+    description: 'Porządkowanie dokumentacji i kontakt z klientami.'
   });
 
   await createDemoAuditLogs(db, admin?.id || null);

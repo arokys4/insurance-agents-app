@@ -48,7 +48,12 @@
 
     <div class="summary-stats">
       <div class="stat-item">
-        <span>Aktywni agenci</span>
+        <span>Agenci razem</span>
+        <strong>{{ agentsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Aktywni</span>
         <strong>{{ activeAgentsCount }}</strong>
       </div>
 
@@ -120,7 +125,10 @@
           </div>
 
           <div class="report-row" *ngFor="let item of meetingsByAgent">
-            <span class="agent-name">{{ item.agentName }}</span>
+            <span class="agent-cell">
+              <span class="agent-name">{{ item.agentName }}</span>
+              <span class="agent-status" *ngIf="item.agentStatus !== 'Aktywny'">{{ item.agentStatus }}</span>
+            </span>
             <span>{{ item.meetingsCount }}</span>
             <span>{{ item.plannedMeetingsCount }}</span>
             <span>{{ item.inProgressMeetingsCount }}</span>
@@ -159,7 +167,10 @@
           </div>
 
           <div class="report-row" *ngFor="let item of workTimeByAgent">
-            <span class="agent-name">{{ item.agentName }}</span>
+            <span class="agent-cell">
+              <span class="agent-name">{{ item.agentName }}</span>
+              <span class="agent-status" *ngIf="item.agentStatus !== 'Aktywny'">{{ item.agentStatus }}</span>
+            </span>
             <span>{{ item.entriesCount }}</span>
             <span>{{ formatHours(item.totalHours) }}</span>
             <span>

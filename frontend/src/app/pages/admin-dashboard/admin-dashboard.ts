@@ -54,6 +54,7 @@ interface AdminOverviewReport {
 interface WorkTimeReportItem {
   agentId: number;
   agentName: string;
+  agentStatus: string;
   entriesCount: number;
   totalHours: number;
 }
@@ -61,6 +62,7 @@ interface WorkTimeReportItem {
 interface MeetingsReportItem {
   agentId: number;
   agentName: string;
+  agentStatus: string;
   meetingsCount: number;
   plannedMeetingsCount: number;
   inProgressMeetingsCount: number;
@@ -80,6 +82,7 @@ export class AdminDashboard implements OnInit {
 
   user: LoggedUser | null = null;
 
+  agentsCount = 0;
   activeAgentsCount = 0;
   meetingsCount = 0;
   plannedMeetingsCount = 0;
@@ -120,6 +123,7 @@ export class AdminDashboard implements OnInit {
     this.http.get<AdminOverviewReport>(this.reportsApiUrl).subscribe({
       next: (report) => {
         this.activeAgentsCount = report.summary.activeAgentsCount;
+        this.agentsCount = report.summary.agentsCount;
         this.meetingsCount = report.summary.meetingsCount;
         this.plannedMeetingsCount = report.summary.plannedMeetingsCount;
         this.inProgressMeetingsCount = report.summary.inProgressMeetingsCount;
@@ -134,6 +138,7 @@ export class AdminDashboard implements OnInit {
       error: (error) => {
         console.error('Błąd pobierania raportu administratora:', error);
         this.activeAgentsCount = 0;
+        this.agentsCount = 0;
         this.meetingsCount = 0;
         this.plannedMeetingsCount = 0;
         this.inProgressMeetingsCount = 0;
