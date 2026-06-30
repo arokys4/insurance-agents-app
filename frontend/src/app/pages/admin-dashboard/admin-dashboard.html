@@ -13,27 +13,27 @@
   </header>
 
   <section class="cards">
-    <div class="card" (click)="goToAgents()">
+    <div class="card" role="button" tabindex="0" (click)="goToAgents()" (keydown.enter)="goToAgents()" (keydown.space)="goToAgents()">
       <strong>Agenci</strong>
       <span>Dodawanie, edycja i status kont agentów</span>
     </div>
 
-    <div class="card" (click)="goToMeetings()">
+    <div class="card" role="button" tabindex="0" (click)="goToMeetings()" (keydown.enter)="goToMeetings()" (keydown.space)="goToMeetings()">
       <strong>Spotkania</strong>
       <span>Planowanie pracy i kontrola terminów</span>
     </div>
 
-    <div class="card" (click)="goToCalendar()">
+    <div class="card" role="button" tabindex="0" (click)="goToCalendar()" (keydown.enter)="goToCalendar()" (keydown.space)="goToCalendar()">
       <strong>Kalendarz</strong>
       <span>Tygodniowy podgląd zaplanowanych spotkań</span>
     </div>
 
-    <div class="card" (click)="goToWorkTime()">
+    <div class="card" role="button" tabindex="0" (click)="goToWorkTime()" (keydown.enter)="goToWorkTime()" (keydown.space)="goToWorkTime()">
       <strong>Ewidencja czasu pracy</strong>
       <span>Rejestrowanie godzin pracy agentów</span>
     </div>
 
-    <div class="card" (click)="goToAuditLogs()">
+    <div class="card" role="button" tabindex="0" (click)="goToAuditLogs()" (keydown.enter)="goToAuditLogs()" (keydown.space)="goToAuditLogs()">
       <strong>Audyt zmian</strong>
       <span>Historia najważniejszych operacji w systemie</span>
     </div>
@@ -140,7 +140,7 @@
         </div>
 
         <ng-template #noMeetingsReport>
-          <p class="empty-message">Brak danych o spotkaniach.</p>
+          <p class="empty-message">Brak danych o spotkaniach. Po dodaniu spotkań raport pokaże ich statusy dla każdego agenta.</p>
         </ng-template>
       </div>
 
@@ -175,7 +175,7 @@
         </div>
 
         <ng-template #noWorkTimeReport>
-          <p class="empty-message">Brak danych o czasie pracy.</p>
+          <p class="empty-message">Brak danych o czasie pracy. Po dodaniu wpisów raport pokaże łączny czas pracy agentów.</p>
         </ng-template>
 
         <p class="report-help">
