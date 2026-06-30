@@ -130,7 +130,9 @@ export class AdminAuditLogs implements OnInit {
       UPDATE_WORK_TIME: 'Edycja czasu pracy',
       DELETE_WORK_TIME: 'Usunięcie czasu pracy',
 
-      DEMO_DATA_SEED: 'Przygotowanie danych demo'
+      DEMO_DATA_SEED: 'Przygotowanie danych demo',
+      UPDATE_OWN_PROFILE: 'Aktualizacja własnego profilu',
+      CHANGE_OWN_PASSWORD: 'Zmiana własnego hasła'
     };
 
     return actionLabels[action] || action;
@@ -143,7 +145,8 @@ export class AdminAuditLogs implements OnInit {
       MEETING_NOTE: 'Notatka',
       MEETING_ATTACHMENT: 'Załącznik',
       WORK_TIME_ENTRY: 'Czas pracy',
-      SYSTEM: 'System'
+      SYSTEM: 'System',
+      USER_PROFILE: 'Profil użytkownika'
     };
 
     return entityLabels[entityType] || entityType;

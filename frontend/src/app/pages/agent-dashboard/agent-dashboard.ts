@@ -462,6 +462,10 @@ export class AgentDashboard implements OnInit {
     this.router.navigate(['/agent/documents']);
   }
 
+  goToMyAccount(): void {
+    this.router.navigate(['/my-account']);
+  }
+
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

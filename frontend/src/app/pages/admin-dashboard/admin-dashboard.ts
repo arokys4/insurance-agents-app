@@ -275,6 +275,10 @@ export class AdminDashboard implements OnInit {
     this.router.navigate(['/admin/audit-logs']);
   }
 
+  goToMyAccount(): void {
+    this.router.navigate(['/my-account']);
+  }
+
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

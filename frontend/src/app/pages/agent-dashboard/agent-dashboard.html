@@ -14,19 +14,23 @@
 
   <section class="cards">
     <div class="card active-card">
-      Moje spotkania
+      <strong>Moje spotkania</strong>
     </div>
 
-    <div class="card" (click)="goToCalendar()">
-      Mój kalendarz
+    <div class="card" role="button" tabindex="0" (click)="goToCalendar()" (keydown.enter)="goToCalendar()" (keydown.space)="goToCalendar()">
+      <strong>Mój kalendarz</strong>
     </div>
 
-    <div class="card" (click)="goToWorkTime()">
-      Czas pracy
+    <div class="card" role="button" tabindex="0" (click)="goToWorkTime()" (keydown.enter)="goToWorkTime()" (keydown.space)="goToWorkTime()">
+      <strong>Czas pracy</strong>
     </div>
 
-    <div class="card" (click)="goToDocuments()">
-      Dokumentacja
+    <div class="card" role="button" tabindex="0" (click)="goToDocuments()" (keydown.enter)="goToDocuments()" (keydown.space)="goToDocuments()">
+      <strong>Dokumentacja</strong>
+    </div>
+
+    <div class="card" role="button" tabindex="0" (click)="goToMyAccount()" (keydown.enter)="goToMyAccount()" (keydown.space)="goToMyAccount()">
+      <strong>Moje konto</strong>
     </div>
   </section>
 

@@ -1,0 +1,98 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Moje konto</h1>
+      <p>Podgląd i aktualizacja podstawowych danych użytkownika.</p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót
+    </button>
+  </header>
+
+  <section class="account-card" *ngIf="!isLoading; else loadingState">
+    <div class="card-heading">
+      <div>
+        <h2>Dane konta</h2>
+        <p *ngIf="user">
+          {{ formatRole(user.role) }} | {{ user.status }}
+        </p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="goToChangePassword()">
+        Zmień hasło
+      </button>
+    </div>
+
+    <div class="readonly-grid" *ngIf="user">
+      <div class="readonly-item">
+        <strong>Adres e-mail</strong>
+        <span>{{ user.email }}</span>
+      </div>
+
+      <div class="readonly-item">
+        <strong>Rola</strong>
+        <span>{{ formatRole(user.role) }}</span>
+      </div>
+    </div>
+
+    <form (ngSubmit)="saveAccount()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="firstName">Imię</label>
+          <input
+            id="firstName"
+            name="firstName"
+            type="text"
+            [(ngModel)]="accountForm.firstName"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="lastName">Nazwisko</label>
+          <input
+            id="lastName"
+            name="lastName"
+            type="text"
+            [(ngModel)]="accountForm.lastName"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="phone">Telefon</label>
+          <input
+            id="phone"
+            name="phone"
+            type="text"
+            maxlength="9"
+            [(ngModel)]="accountForm.phone"
+          />
+        </div>
+      </div>
+
+      <p class="form-hint">
+        Adres e-mail jest loginem do systemu, dlatego nie jest edytowany z poziomu profilu.
+      </p>
+
+      <p class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </p>
+
+      <p class="success-message" *ngIf="successMessage">
+        {{ successMessage }}
+      </p>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'Zapisywanie...' : 'Zapisz dane' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <ng-template #loadingState>
+    <section class="account-card">
+      <p class="empty-message">Ładowanie danych konta...</p>
+    </section>
+  </ng-template>
+</div>
