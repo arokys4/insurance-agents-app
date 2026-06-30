@@ -1,6 +1,8 @@
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 async function addColumnIfNotExists(db, tableName, columnName, columnDefinition) {
   const columns = await db.all(`PRAGMA table_info(${tableName})`);
@@ -61,7 +63,397 @@ async function createDefaultAdmin(db) {
   console.log('Utworzono domyślne konto administratora: admin@firma.pl / admin123');
 }
 
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateTime(date, hours, minutes = 0) {
+  return `${formatDate(date)}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function addDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+
+  return date;
+}
+
+async function getAgentByEmail(db, email) {
+  return db.get(
+    `
+    SELECT id
+    FROM agents
+    WHERE email = ?
+    `,
+    [email]
+  );
+}
+
+async function createDemoAgent(db, data, hashedPassword) {
+  const existingAgent = await getAgentByEmail(db, data.email);
+
+  if (existingAgent) {
+    return existingAgent.id;
+  }
+
+  const result = await db.run(
+    `
+    INSERT INTO agents (
+      first_name,
+      last_name,
+      email,
+      phone,
+      status,
+      password,
+      role,
+      must_change_password
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      data.firstName,
+      data.lastName,
+      data.email,
+      data.phone,
+      data.status,
+      hashedPassword,
+      'AGENT',
+      1
+    ]
+  );
+
+  return result.lastID;
+}
+
+async function createDemoMeeting(db, data) {
+  const existingMeeting = await db.get(
+    `
+    SELECT id
+    FROM meetings
+    WHERE title = ?
+    `,
+    [data.title]
+  );
+
+  if (existingMeeting) {
+    return existingMeeting.id;
+  }
+
+  const result = await db.run(
+    `
+    INSERT INTO meetings (
+      title,
+      description,
+      meeting_type,
+      start_date,
+      end_date,
+      status,
+      agent_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      data.title,
+      data.description,
+      data.meetingType,
+      data.startDate,
+      data.endDate,
+      data.status,
+      data.agentId
+    ]
+  );
+
+  return result.lastID;
+}
+
+async function createDemoWorkTimeEntry(db, data) {
+  const existingEntry = await db.get(
+    `
+    SELECT id
+    FROM work_time_entries
+    WHERE agent_id = ?
+      AND work_date = ?
+      AND start_time = ?
+    `,
+    [
+      data.agentId,
+      data.workDate,
+      data.startTime
+    ]
+  );
+
+  if (existingEntry) {
+    return;
+  }
+
+  await db.run(
+    `
+    INSERT INTO work_time_entries (
+      agent_id,
+      work_date,
+      start_time,
+      end_time,
+      description
+    )
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [
+      data.agentId,
+      data.workDate,
+      data.startTime,
+      data.endTime,
+      data.description
+    ]
+  );
+}
+
+async function createDemoMeetingNote(db, meetingId, content) {
+  const existingNote = await db.get(
+    `
+    SELECT id
+    FROM meeting_notes
+    WHERE meeting_id = ?
+      AND content = ?
+    `,
+    [meetingId, content]
+  );
+
+  if (existingNote) {
+    return;
+  }
+
+  await db.run(
+    `
+    INSERT INTO meeting_notes (
+      meeting_id,
+      content
+    )
+    VALUES (?, ?)
+    `,
+    [meetingId, content]
+  );
+}
+
+async function createDemoAttachment(db, meetingId) {
+  const fileName = 'demo-polisa-notatka.txt';
+  const uploadDirectory = path.join(__dirname, '../../uploads');
+  const filePath = path.join(uploadDirectory, fileName);
+
+  const existingAttachment = await db.get(
+    `
+    SELECT id
+    FROM meeting_attachments
+    WHERE meeting_id = ?
+      AND file_name = ?
+    `,
+    [meetingId, fileName]
+  );
+
+  if (existingAttachment) {
+    return;
+  }
+
+  fs.mkdirSync(uploadDirectory, { recursive: true });
+
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(
+      filePath,
+      'Przykładowy załącznik demonstracyjny do spotkania z klientem.\n',
+      'utf8'
+    );
+  }
+
+  await db.run(
+    `
+    INSERT INTO meeting_attachments (
+      meeting_id,
+      original_name,
+      file_name,
+      file_path,
+      mime_type
+    )
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [
+      meetingId,
+      'notatka-do-polisy.txt',
+      fileName,
+      filePath,
+      'text/plain'
+    ]
+  );
+}
+
+async function createDemoAuditLog(db, adminId) {
+  const existingLog = await db.get(
+    `
+    SELECT id
+    FROM audit_logs
+    WHERE action = 'DEMO_DATA_SEED'
+    `
+  );
+
+  if (existingLog) {
+    return;
+  }
+
+  await db.run(
+    `
+    INSERT INTO audit_logs (
+      user_id,
+      user_role,
+      action,
+      entity_type,
+      description
+    )
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [
+      adminId,
+      'ADMIN',
+      'DEMO_DATA_SEED',
+      'SYSTEM',
+      'Dodano przykładowe dane demonstracyjne do prezentacji systemu.'
+    ]
+  );
+}
+
+async function createDemoData(db) {
+  if (process.env.DISABLE_DEMO_DATA === 'true') {
+    return;
+  }
+
+  const admin = await getAgentByEmail(db, 'admin@firma.pl');
+  const hashedPassword = await bcrypt.hash('Agent@123', 10);
+
+  const annaId = await createDemoAgent(db, {
+    firstName: 'Anna',
+    lastName: 'Nowak',
+    email: 'anna.nowak@firma.pl',
+    phone: '501222333',
+    status: 'Aktywny'
+  }, hashedPassword);
+
+  const piotrId = await createDemoAgent(db, {
+    firstName: 'Piotr',
+    lastName: 'Zieliński',
+    email: 'piotr.zielinski@firma.pl',
+    phone: '502333444',
+    status: 'Aktywny'
+  }, hashedPassword);
+
+  const mariaId = await createDemoAgent(db, {
+    firstName: 'Maria',
+    lastName: 'Wiśniewska',
+    email: 'maria.wisniewska@firma.pl',
+    phone: '503444555',
+    status: 'Nieaktywny'
+  }, hashedPassword);
+
+  const completedMeetingId = await createDemoMeeting(db, {
+    title: 'Demo: omówienie polisy komunikacyjnej',
+    description: 'Spotkanie z klientem dotyczące odnowienia polisy OC/AC.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(-4), 10, 0),
+    endDate: formatDateTime(addDays(-4), 11, 0),
+    status: 'Zakończone',
+    agentId: annaId
+  });
+
+  const plannedMeetingId = await createDemoMeeting(db, {
+    title: 'Demo: prezentacja oferty mieszkaniowej',
+    description: 'Przygotowanie oferty ubezpieczenia mieszkania dla nowego klienta.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(1), 9, 30),
+    endDate: formatDateTime(addDays(1), 10, 30),
+    status: 'Zaplanowane',
+    agentId: annaId
+  });
+
+  const damageMeetingId = await createDemoMeeting(db, {
+    title: 'Demo: oględziny szkody po zalaniu',
+    description: 'Weryfikacja dokumentacji i zdjęć szkody.',
+    meetingType: 'Oględziny szkody',
+    startDate: formatDateTime(addDays(2), 12, 0),
+    endDate: formatDateTime(addDays(2), 13, 30),
+    status: 'Zaplanowane',
+    agentId: piotrId
+  });
+
+  await createDemoMeeting(db, {
+    title: 'Demo: status likwidacji szkody',
+    description: 'Kontakt z klientem w sprawie brakujących dokumentów.',
+    meetingType: 'Inna sprawa',
+    startDate: formatDateTime(addDays(0), 14, 0),
+    endDate: formatDateTime(addDays(0), 14, 45),
+    status: 'W realizacji',
+    agentId: piotrId
+  });
+
+  await createDemoMeeting(db, {
+    title: 'Demo: przełożone spotkanie z przedsiębiorcą',
+    description: 'Klient poprosił o zmianę terminu rozmowy o ubezpieczeniu firmowym.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(3), 11, 0),
+    endDate: formatDateTime(addDays(3), 12, 0),
+    status: 'Przełożone',
+    agentId: mariaId
+  });
+
+  await createDemoMeetingNote(
+    db,
+    completedMeetingId,
+    'Klient zaakceptował zakres polisy i poprosił o przesłanie podsumowania na e-mail.'
+  );
+
+  await createDemoMeetingNote(
+    db,
+    plannedMeetingId,
+    'Przed spotkaniem przygotować wariant podstawowy i rozszerzony ubezpieczenia.'
+  );
+
+  await createDemoMeetingNote(
+    db,
+    damageMeetingId,
+    'Do sprawdzenia: zdjęcia szkody, numer polisy oraz data zgłoszenia.'
+  );
+
+  await createDemoAttachment(db, completedMeetingId);
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: annaId,
+    workDate: formatDate(addDays(-4)),
+    startTime: '08:00',
+    endTime: '16:00',
+    description: 'Obsługa klientów, spotkanie polisowe i uzupełnienie dokumentacji.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: annaId,
+    workDate: formatDate(addDays(-3)),
+    startTime: '09:00',
+    endTime: '15:00',
+    description: 'Przygotowanie ofert i kontakt telefoniczny z klientami.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: piotrId,
+    workDate: formatDate(addDays(-2)),
+    startTime: '08:30',
+    endTime: '14:30',
+    description: 'Oględziny szkody, dokumentacja i aktualizacja statusów spotkań.'
+  });
+
+  await createDemoAuditLog(db, admin?.id || null);
+}
+
 async function openDatabase() {
+  fs.mkdirSync(path.join(__dirname, '../../data'), { recursive: true });
+
   const db = await open({
     filename: './data/app.sqlite',
     driver: sqlite3.Database
@@ -149,6 +541,7 @@ async function openDatabase() {
   `);
 
   await createDefaultAdmin(db);
+  await createDemoData(db);
 
   return db;
 }
