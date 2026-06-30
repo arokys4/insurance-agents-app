@@ -167,11 +167,11 @@ export class AdminDashboard implements OnInit {
     }
 
     if (agentsWithoutMeetings > 0) {
-      insights.push(`${agentsWithoutMeetings} agentów nie ma jeszcze przypisanych spotkań.`);
+      insights.push(`${agentsWithoutMeetings} ${this.getAgentPlural(agentsWithoutMeetings)} nie ma jeszcze przypisanych spotkań.`);
     }
 
     if (agentsWithoutWorkTime > 0) {
-      insights.push(`${agentsWithoutWorkTime} agentów nie ma wpisów w ewidencji czasu pracy.`);
+      insights.push(`${agentsWithoutWorkTime} ${this.getAgentPlural(agentsWithoutWorkTime)} nie ma wpisów w ewidencji czasu pracy.`);
     }
 
     if (mostLoadedAgent) {
@@ -199,6 +199,21 @@ export class AdminDashboard implements OnInit {
     }
 
     return Math.round((this.completedMeetingsCount / this.meetingsCount) * 100);
+  }
+
+  getAgentPlural(value: number): string {
+    if (value === 1) {
+      return 'agent';
+    }
+
+    const lastDigit = value % 10;
+    const lastTwoDigits = value % 100;
+
+    if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) {
+      return 'agentów';
+    }
+
+    return 'agentów';
   }
 
   getMeetingCompletionPercent(item: MeetingsReportItem): number {

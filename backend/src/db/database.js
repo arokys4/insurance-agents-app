@@ -288,7 +288,7 @@ async function createDemoAttachment(db, meetingId) {
   );
 }
 
-async function createDemoAuditLog(db, adminId) {
+async function createDemoAuditLogs(db, adminId) {
   const existingLog = await db.get(
     `
     SELECT id
@@ -301,25 +301,52 @@ async function createDemoAuditLog(db, adminId) {
     return;
   }
 
-  await db.run(
-    `
-    INSERT INTO audit_logs (
-      user_id,
-      user_role,
-      action,
-      entity_type,
-      description
-    )
-    VALUES (?, ?, ?, ?, ?)
-    `,
+  const logs = [
     [
       adminId,
       'ADMIN',
       'DEMO_DATA_SEED',
       'SYSTEM',
       'Dodano przykładowe dane demonstracyjne do prezentacji systemu.'
+    ],
+    [
+      adminId,
+      'ADMIN',
+      'CREATE_AGENT',
+      'AGENT',
+      'Dodano przykładowych agentów: Annę Nowak, Piotra Zielińskiego i Marię Wiśniewską.'
+    ],
+    [
+      adminId,
+      'ADMIN',
+      'CREATE_MEETING',
+      'MEETING',
+      'Dodano przykładowe spotkania w różnych statusach.'
+    ],
+    [
+      adminId,
+      'ADMIN',
+      'CREATE_WORK_TIME',
+      'WORK_TIME_ENTRY',
+      'Dodano przykładowe wpisy czasu pracy agentów.'
     ]
-  );
+  ];
+
+  for (const log of logs) {
+    await db.run(
+      `
+      INSERT INTO audit_logs (
+        user_id,
+        user_role,
+        action,
+        entity_type,
+        description
+      )
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      log
+    );
+  }
 }
 
 async function createDemoData(db) {
@@ -355,7 +382,7 @@ async function createDemoData(db) {
   }, hashedPassword);
 
   const completedMeetingId = await createDemoMeeting(db, {
-    title: 'Demo: omówienie polisy komunikacyjnej',
+    title: 'Omówienie polisy komunikacyjnej',
     description: 'Spotkanie z klientem dotyczące odnowienia polisy OC/AC.',
     meetingType: 'Spotkanie z klientem',
     startDate: formatDateTime(addDays(-4), 10, 0),
@@ -365,7 +392,7 @@ async function createDemoData(db) {
   });
 
   const plannedMeetingId = await createDemoMeeting(db, {
-    title: 'Demo: prezentacja oferty mieszkaniowej',
+    title: 'Prezentacja oferty mieszkaniowej',
     description: 'Przygotowanie oferty ubezpieczenia mieszkania dla nowego klienta.',
     meetingType: 'Spotkanie z klientem',
     startDate: formatDateTime(addDays(1), 9, 30),
@@ -375,7 +402,7 @@ async function createDemoData(db) {
   });
 
   const damageMeetingId = await createDemoMeeting(db, {
-    title: 'Demo: oględziny szkody po zalaniu',
+    title: 'Oględziny szkody po zalaniu',
     description: 'Weryfikacja dokumentacji i zdjęć szkody.',
     meetingType: 'Oględziny szkody',
     startDate: formatDateTime(addDays(2), 12, 0),
@@ -385,7 +412,7 @@ async function createDemoData(db) {
   });
 
   await createDemoMeeting(db, {
-    title: 'Demo: status likwidacji szkody',
+    title: 'Status likwidacji szkody',
     description: 'Kontakt z klientem w sprawie brakujących dokumentów.',
     meetingType: 'Inna sprawa',
     startDate: formatDateTime(addDays(0), 14, 0),
@@ -395,7 +422,7 @@ async function createDemoData(db) {
   });
 
   await createDemoMeeting(db, {
-    title: 'Demo: przełożone spotkanie z przedsiębiorcą',
+    title: 'Przełożone spotkanie z przedsiębiorcą',
     description: 'Klient poprosił o zmianę terminu rozmowy o ubezpieczeniu firmowym.',
     meetingType: 'Spotkanie z klientem',
     startDate: formatDateTime(addDays(3), 11, 0),
@@ -448,7 +475,7 @@ async function createDemoData(db) {
     description: 'Oględziny szkody, dokumentacja i aktualizacja statusów spotkań.'
   });
 
-  await createDemoAuditLog(db, admin?.id || null);
+  await createDemoAuditLogs(db, admin?.id || null);
 }
 
 async function openDatabase() {
