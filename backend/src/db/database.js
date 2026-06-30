@@ -463,12 +463,32 @@ async function createDemoData(db) {
     agentId: mariaId
   });
 
-  await createDemoMeeting(db, {
+  const tomaszPlannedMeetingId = await createDemoMeeting(db, {
     title: 'Analiza potrzeb klienta firmowego',
     description: 'Rozmowa dotycząca pakietu ubezpieczeń dla małej firmy.',
     meetingType: 'Spotkanie z klientem',
     startDate: formatDateTime(addDays(1), 12, 0),
     endDate: formatDateTime(addDays(1), 13, 0),
+    status: 'Zaplanowane',
+    agentId: tomaszId
+  });
+
+  const tomaszCompletedMeetingId = await createDemoMeeting(db, {
+    title: 'Przegląd ubezpieczenia firmowego',
+    description: 'Omówienie aktualnej polisy i propozycja rozszerzenia zakresu ochrony.',
+    meetingType: 'Spotkanie z klientem',
+    startDate: formatDateTime(addDays(-2), 9, 0),
+    endDate: formatDateTime(addDays(-2), 10, 0),
+    status: 'Zakończone',
+    agentId: tomaszId
+  });
+
+  const tomaszFollowUpMeetingId = await createDemoMeeting(db, {
+    title: 'Doprecyzowanie oferty flotowej',
+    description: 'Telefoniczne ustalenie liczby pojazdów i wariantu ochrony.',
+    meetingType: 'Inna sprawa',
+    startDate: formatDateTime(addDays(3), 14, 0),
+    endDate: formatDateTime(addDays(3), 14, 30),
     status: 'Zaplanowane',
     agentId: tomaszId
   });
@@ -521,7 +541,26 @@ async function createDemoData(db) {
     'Do sprawdzenia: zdjęcia szkody, numer polisy oraz data zgłoszenia.'
   );
 
+  await createDemoMeetingNote(
+    db,
+    tomaszPlannedMeetingId,
+    'Przygotować wariant podstawowy, rozszerzony oraz kalkulację dla pakietu firmowego.'
+  );
+
+  await createDemoMeetingNote(
+    db,
+    tomaszCompletedMeetingId,
+    'Klient jest zainteresowany rozszerzeniem ochrony o odpowiedzialność cywilną działalności.'
+  );
+
+  await createDemoMeetingNote(
+    db,
+    tomaszFollowUpMeetingId,
+    'Do rozmowy przygotować pytania o liczbę pojazdów i historię szkód.'
+  );
+
   await createDemoAttachment(db, completedMeetingId);
+  await createDemoAttachment(db, tomaszCompletedMeetingId);
 
   await createDemoWorkTimeEntry(db, {
     agentId: annaId,
@@ -553,6 +592,14 @@ async function createDemoData(db) {
     startTime: '08:00',
     endTime: '15:30',
     description: 'Spotkania z klientami firmowymi i przygotowanie ofert.'
+  });
+
+  await createDemoWorkTimeEntry(db, {
+    agentId: tomaszId,
+    workDate: formatDate(addDays(-2)),
+    startTime: '09:00',
+    endTime: '16:00',
+    description: 'Przegląd polis firmowych, notatki po spotkaniach i uzupełnienie dokumentacji.'
   });
 
   await createDemoWorkTimeEntry(db, {

@@ -171,6 +171,16 @@ button:disabled {
   color: #555;
 }
 
+.unavailable-state h2 {
+  margin: 0 0 8px 0;
+  color: #198754;
+}
+
+.unavailable-state p {
+  margin: 0 0 18px 0;
+  color: #555;
+}
+
 .form-actions {
   margin-top: 24px;
 }

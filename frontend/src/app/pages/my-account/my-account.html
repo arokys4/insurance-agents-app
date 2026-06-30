@@ -10,7 +10,7 @@
     </button>
   </header>
 
-  <section class="account-card" *ngIf="!isLoading; else loadingState">
+  <section class="account-card" *ngIf="!isLoading && user; else accountState">
     <div class="card-heading">
       <div>
         <h2>Dane konta</h2>
@@ -90,9 +90,17 @@
     </form>
   </section>
 
-  <ng-template #loadingState>
+  <ng-template #accountState>
     <section class="account-card">
-      <p class="empty-message">Ładowanie danych konta...</p>
+      <p class="empty-message" *ngIf="isLoading">Ładowanie danych konta...</p>
+
+      <div class="unavailable-state" *ngIf="!isLoading">
+        <h2>Nie udało się pobrać danych konta</h2>
+        <p>{{ errorMessage || 'Spróbuj ponownie za chwilę.' }}</p>
+        <button type="button" (click)="loadAccount()">
+          Spróbuj ponownie
+        </button>
+      </div>
     </section>
   </ng-template>
 </div>
