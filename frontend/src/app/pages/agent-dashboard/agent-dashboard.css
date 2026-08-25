@@ -86,6 +86,10 @@ button:hover {
   background: #f8fbf9;
 }
 
+.toolbar {
+  margin-bottom: 24px;
+}
+
 /* Najbliższe spotkanie */
 
 .nearest-card {
@@ -108,6 +112,103 @@ button:hover {
 .nearest-card p {
   margin: 0;
   color: #555;
+}
+
+/* Formularz spotkania */
+
+.form-card {
+  background: white;
+  padding: 28px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e4ea;
+}
+
+.form-card h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #198754;
+}
+
+.form-header p {
+  margin: 0;
+  color: #555;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 18px 24px;
+  margin-top: 24px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field label {
+  font-weight: bold;
+  color: #222;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-field textarea {
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: #198754;
+  box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.conflict-box {
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 8px;
+  border-left: 5px solid #b02a37;
+  background: #fff5f5;
+}
+
+.conflict-box h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #b02a37;
+}
+
+.conflict-box p {
+  margin: 8px 0;
+  color: #333;
 }
 
 /* Karty główne */
@@ -417,6 +518,7 @@ td {
   .header,
   .table-header,
   .details-header,
+  .form-header,
   .nearest-card {
     flex-direction: column;
     align-items: flex-start;
@@ -424,6 +526,10 @@ td {
   }
 
   .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
     grid-template-columns: 1fr;
   }
 

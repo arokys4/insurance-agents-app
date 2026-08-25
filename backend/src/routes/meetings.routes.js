@@ -342,11 +342,14 @@ function meetingsRouter(db) {
 
   router.post('/', async (req, res) => {
     try {
-      if (!isAdmin(req)) {
-        return res.status(403).json({ error: 'Tylko administrator może dodawać spotkania.' });
-      }
+      const meetingData = isAdmin(req)
+        ? req.body
+        : {
+            ...req.body,
+            agentId: req.user.id
+          };
 
-      const validation = validateMeetingData(req.body);
+      const validation = validateMeetingData(meetingData);
 
       if (!validation.valid) {
         return res.status(400).json({

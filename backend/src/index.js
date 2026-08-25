@@ -1,6 +1,7 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 
 const { openDatabase } = require('./db/database');
 const { requireAuth, requireAdmin } = require('./utils/auth');
@@ -39,7 +40,7 @@ async function startServer() {
   app.use('/api/meeting-attachments', requireAuth, meetingAttachmentsRouter(db));
   app.use('/api/audit-logs', requireAuth, requireAdmin, auditLogsRouter(db));
   app.use('/api/reports', requireAuth, requireAdmin, reportsRouter(db));
-  const PORT = 4000;
+  const PORT = Number(process.env.PORT) || 4000;
 
   app.listen(PORT, () => {
     console.log(`Serwer działa na porcie ${PORT}`);

@@ -1,48 +1,54 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-function hasRole(expectedRole: 'ADMIN' | 'AGENT'): boolean {
+interface StoredUser {
+  role: 'ADMIN' | 'AGENT';
+  mustChangePassword?: boolean;
+}
+
+function getStoredUser(): StoredUser | null {
   const token = localStorage.getItem('token');
   const userJson = localStorage.getItem('user');
 
   if (!token || !userJson) {
-    return false;
+    return null;
   }
 
   try {
-    const user = JSON.parse(userJson);
-    return user.role === expectedRole;
+    return JSON.parse(userJson);
   } catch {
     localStorage.clear();
+    return null;
+  }
+}
+
+function canActivateRole(expectedRole: 'ADMIN' | 'AGENT', router: Router): boolean {
+  const user = getStoredUser();
+
+  if (!user || user.role !== expectedRole) {
+    router.navigate(['/login']);
     return false;
   }
+
+  if (user.mustChangePassword) {
+    router.navigate(['/change-password']);
+    return false;
+  }
+
+  return true;
 }
 
 export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
 
-  if (hasRole('ADMIN')) {
-    return true;
-  }
-
-  router.navigate(['/login']);
-  return false;
+  return canActivateRole('ADMIN', router);
 };
 
 export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
-  const token = localStorage.getItem('token');
-  const userJson = localStorage.getItem('user');
+  const user = getStoredUser();
 
-  if (token && userJson) {
-    try {
-      JSON.parse(userJson);
-    } catch {
-      localStorage.clear();
-      router.navigate(['/login']);
-      return false;
-    }
-
+  if (user) {
     return true;
   }
 
@@ -53,10 +59,5 @@ export const authGuard: CanActivateFn = () => {
 export const agentGuard: CanActivateFn = () => {
   const router = inject(Router);
 
-  if (hasRole('AGENT')) {
-    return true;
-  }
-
-  router.navigate(['/login']);
-  return false;
+  return canActivateRole('AGENT', router);
 };

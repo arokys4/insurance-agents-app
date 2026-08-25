@@ -34,6 +34,129 @@
     </div>
   </section>
 
+  <section class="toolbar">
+    <button type="button" (click)="showAddMeetingForm()">
+      Dodaj spotkanie
+    </button>
+  </section>
+
+  <section class="form-card" *ngIf="showMeetingForm">
+    <div class="form-header">
+      <div>
+        <h2>Dodawanie spotkania</h2>
+        <p>Spotkanie zostanie automatycznie przypisane do Twojego konta.</p>
+      </div>
+
+      <button type="button" class="secondary-button" (click)="cancelMeetingForm()">
+        Zamknij
+      </button>
+    </div>
+
+    <div class="conflict-box" *ngIf="meetingConflictInfo as conflict">
+      <h3>Konflikt terminu spotkania</h3>
+
+      <p>
+        {{ conflict.message }}
+      </p>
+
+      <p>
+        <strong>Kolidujące spotkanie:</strong>
+        {{ conflict.conflictTitle }}
+      </p>
+
+      <p>
+        <strong>Termin kolizji:</strong>
+        {{ formatDate(conflict.conflictStartDate) }}
+        -
+        {{ formatDate(conflict.conflictEndDate) }}
+      </p>
+
+      <p *ngIf="conflict.suggestedStartDate && conflict.suggestedEndDate">
+        <strong>Proponowany wolny termin:</strong>
+        {{ formatDate(conflict.suggestedStartDate) }}
+        -
+        {{ formatDate(conflict.suggestedEndDate) }}
+      </p>
+
+      <button
+        type="button"
+        *ngIf="conflict.suggestedStartDate && conflict.suggestedEndDate"
+        (click)="useSuggestedMeetingTime()"
+      >
+        Użyj proponowanego terminu
+      </button>
+    </div>
+
+    <form (ngSubmit)="saveMeeting()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="title">Tytuł</label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            [(ngModel)]="meetingForm.title"
+            placeholder="np. Spotkanie z klientem"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="meetingType">Typ spotkania</label>
+          <select
+            id="meetingType"
+            name="meetingType"
+            [(ngModel)]="meetingForm.meetingType"
+          >
+            <option *ngFor="let type of meetingTypes" [value]="type">
+              {{ type }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="startDate">Data rozpoczęcia</label>
+          <input
+            id="startDate"
+            name="startDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.startDate"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="endDate">Data zakończenia</label>
+          <input
+            id="endDate"
+            name="endDate"
+            type="datetime-local"
+            [(ngModel)]="meetingForm.endDate"
+          />
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Opis</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            [(ngModel)]="meetingForm.description"
+            placeholder="Krótki opis spotkania..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">
+          Zapisz spotkanie
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cancelMeetingForm()">
+          Anuluj
+        </button>
+      </div>
+    </form>
+  </section>
+
   <section class="nearest-card" *ngIf="getNearestMeeting() as nearestMeeting">
     <div>
       <h2>Najbliższe spotkanie</h2>
@@ -298,7 +421,7 @@
     </div>
 
     <p class="empty-message" *ngIf="meetings.length === 0">
-      Brak przypisanych spotkań. Gdy administrator zaplanuje spotkanie, pojawi się ono tutaj.
+      Brak przypisanych spotkań. Możesz dodać własne spotkanie albo poczekać, aż administrator zaplanuje je w systemie.
     </p>
 
     <p class="empty-message" *ngIf="meetings.length > 0 && filteredMeetings.length === 0">

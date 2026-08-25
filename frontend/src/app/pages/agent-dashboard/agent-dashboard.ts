@@ -44,6 +44,15 @@ interface MeetingAttachment {
   uploadedAt?: string;
 }
 
+interface MeetingConflictInfo {
+  message: string;
+  conflictTitle: string;
+  conflictStartDate: string;
+  conflictEndDate: string;
+  suggestedStartDate: string | null;
+  suggestedEndDate: string | null;
+}
+
 @Component({
   selector: 'app-agent-dashboard',
   imports: [NgFor, NgIf, FormsModule],
@@ -71,6 +80,26 @@ export class AgentDashboard implements OnInit {
 
   meetingAttachments: MeetingAttachment[] = [];
   selectedFile: File | null = null;
+
+  showMeetingForm = false;
+  meetingConflictInfo: MeetingConflictInfo | null = null;
+
+  meetingTypes = [
+    'Spotkanie z klientem',
+    'Oględziny szkody',
+    'Spotkanie wewnętrzne',
+    'Inna sprawa'
+  ];
+
+  meetingForm: Meeting = {
+    title: '',
+    description: '',
+    meetingType: 'Spotkanie z klientem',
+    startDate: '',
+    endDate: '',
+    status: 'Zaplanowane',
+    agentId: null
+  };
 
   constructor(
     private router: Router,
@@ -112,6 +141,117 @@ export class AgentDashboard implements OnInit {
     this.meetingSearchText = '';
   }
 
+  showAddMeetingForm(): void {
+    this.clearMeetingForm();
+    this.closeDetails();
+    this.showMeetingForm = true;
+  }
+
+  saveMeeting(): void {
+    if (!this.validateMeetingForm()) {
+      return;
+    }
+
+    this.meetingConflictInfo = null;
+
+    const payload = {
+      ...this.meetingForm,
+      agentId: this.user?.id ?? null
+    };
+
+    this.http.post<Meeting>(this.meetingsApiUrl, payload).subscribe({
+      next: () => {
+        this.loadMeetings();
+        this.cancelMeetingForm();
+      },
+      error: (error) => {
+        this.handleMeetingSaveError(error);
+      }
+    });
+  }
+
+  validateMeetingForm(): boolean {
+    if (
+      !this.meetingForm.title ||
+      !this.meetingForm.meetingType ||
+      !this.meetingForm.startDate ||
+      !this.meetingForm.endDate
+    ) {
+      alert('Uzupełnij wszystkie wymagane pola spotkania.');
+      return false;
+    }
+
+    const start = new Date(this.meetingForm.startDate);
+    const end = new Date(this.meetingForm.endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      alert('Nieprawidłowy format daty.');
+      return false;
+    }
+
+    if (end <= start) {
+      alert('Data zakończenia musi być późniejsza niż data rozpoczęcia.');
+      return false;
+    }
+
+    return true;
+  }
+
+  handleMeetingSaveError(error: any): void {
+    console.error('Błąd zapisu spotkania:', error);
+
+    this.meetingConflictInfo = null;
+
+    if (error.status === 409 && error.error?.conflict) {
+      const conflict = error.error.conflict;
+
+      this.meetingConflictInfo = {
+        message: error.error.error || 'Masz już spotkanie w wybranym terminie.',
+        conflictTitle: conflict.title,
+        conflictStartDate: conflict.startDate,
+        conflictEndDate: conflict.endDate,
+        suggestedStartDate: error.error.suggestedStartDate || null,
+        suggestedEndDate: error.error.suggestedEndDate || null
+      };
+
+      return;
+    }
+
+    const message =
+      error.error?.error || 'Nie udało się zapisać spotkania.';
+
+    alert(message);
+  }
+
+  useSuggestedMeetingTime(): void {
+    if (!this.meetingConflictInfo?.suggestedStartDate || !this.meetingConflictInfo?.suggestedEndDate) {
+      return;
+    }
+
+    this.meetingForm.startDate = this.meetingConflictInfo.suggestedStartDate;
+    this.meetingForm.endDate = this.meetingConflictInfo.suggestedEndDate;
+    this.meetingConflictInfo = null;
+  }
+
+  cancelMeetingForm(): void {
+    this.clearMeetingForm();
+    this.showMeetingForm = false;
+  }
+
+  clearMeetingForm(): void {
+    this.meetingForm = {
+      title: '',
+      description: '',
+      meetingType: 'Spotkanie z klientem',
+      startDate: '',
+      endDate: '',
+      status: 'Zaplanowane',
+      agentId: this.user?.id ?? null
+    };
+
+    this.meetingConflictInfo = null;
+  }
+
   loadLoggedUser(): void {
     const userJson = localStorage.getItem('user');
 
@@ -141,6 +281,8 @@ export class AgentDashboard implements OnInit {
 
   showDetails(meeting: Meeting): void {
     this.selectedMeeting = meeting;
+    this.showMeetingForm = false;
+    this.meetingConflictInfo = null;
     this.selectedStatus = meeting.status;
     this.clearNoteForm();
     this.selectedFile = null;

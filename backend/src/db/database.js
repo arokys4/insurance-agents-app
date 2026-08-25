@@ -622,10 +622,16 @@ async function createDemoData(db) {
 }
 
 async function openDatabase() {
-  fs.mkdirSync(path.join(__dirname, '../../data'), { recursive: true });
+  const databaseDirectory = path.join(__dirname, '../../data');
+  const configuredDatabasePath = process.env.DATABASE_PATH;
+  const databasePath = configuredDatabasePath
+    ? path.resolve(path.join(__dirname, '../..'), configuredDatabasePath)
+    : path.join(databaseDirectory, 'app.sqlite');
+
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
   const db = await open({
-    filename: './data/app.sqlite',
+    filename: databasePath,
     driver: sqlite3.Database
   });
 

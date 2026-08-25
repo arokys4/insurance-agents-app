@@ -224,6 +224,12 @@ function workTimeRouter(db) {
         });
       }
 
+      if (agent.status !== 'Aktywny') {
+        return res.status(400).json({
+          error: 'Nie można dodać czasu pracy dla nieaktywnego agenta.'
+        });
+      }
+
       const result = await db.run(
         `
         INSERT INTO work_time_entries (
@@ -321,6 +327,12 @@ function workTimeRouter(db) {
       if (agent.role === 'ADMIN') {
         return res.status(400).json({
           error: 'Nie można przypisać czasu pracy do administratora.'
+        });
+      }
+
+      if (agent.status !== 'Aktywny') {
+        return res.status(400).json({
+          error: 'Nie można przypisać czasu pracy do nieaktywnego agenta.'
         });
       }
 

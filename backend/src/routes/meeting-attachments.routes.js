@@ -5,6 +5,12 @@ const fs = require('fs');
 const { addAuditLog } = require('../utils/audit');
 
 const uploadDirectory = path.join(__dirname, '../../uploads');
+const allowedMimeTypes = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp'
+]);
 
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, { recursive: true });
@@ -26,8 +32,31 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      return cb(new Error('Dozwolone są tylko pliki PDF oraz obrazy JPG, PNG i WebP.'));
+    }
+
+    return cb(null, true);
   }
 });
+
+function handleUploadError(error, req, res, next) {
+  if (!error) {
+    return next();
+  }
+
+  if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      error: 'Plik jest za duży. Maksymalny rozmiar załącznika to 10 MB.'
+    });
+  }
+
+  return res.status(400).json({
+    error: error.message || 'Nie udało się przesłać pliku.'
+  });
+}
 
 function getRequestUser(req) {
   return {
@@ -114,7 +143,7 @@ function meetingAttachmentsRouter(db) {
     }
   });
 
-  router.post('/', upload.single('file'), async (req, res) => {
+  router.post('/', upload.single('file'), handleUploadError, async (req, res) => {
     try {
       const meetingId = Number(req.body.meetingId);
 
