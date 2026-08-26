@@ -12,6 +12,7 @@ import { AgentCalendar } from './pages/agent-calendar/agent-calendar';
 import { AgentWorkTime } from './pages/agent-work-time/agent-work-time';
 import { AgentDocuments } from './pages/agent-documents/agent-documents';
 import { AdminAuditLogs } from './pages/admin-audit-logs/admin-audit-logs';
+import { AdminReport } from './pages/admin-report/admin-report';
 import { MyAccount } from './pages/my-account/my-account';
 
 export const routes: Routes = [
@@ -77,6 +78,11 @@ export const routes: Routes = [
   {
     path: 'admin/work-time',
     component: AdminWorkTime,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/report',
+    component: AdminReport,
     canActivate: [adminGuard]
   },
   {

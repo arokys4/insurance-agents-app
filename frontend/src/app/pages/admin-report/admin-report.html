@@ -1,0 +1,161 @@
+<div class="page">
+  <header class="header">
+    <div>
+      <h1>Raport nadzoru</h1>
+      <p>Przegląd realizacji spotkań oraz ewidencji czasu pracy wszystkich agentów.</p>
+    </div>
+
+    <button type="button" class="secondary-button" (click)="goBack()">
+      Powrót do panelu administratora
+    </button>
+  </header>
+
+  <p class="loading-message" *ngIf="isLoading">Pobieranie raportu...</p>
+
+  <p class="error-message" *ngIf="reportErrorMessage">
+    {{ reportErrorMessage }}
+  </p>
+
+  <main *ngIf="!isLoading && !reportErrorMessage">
+    <section class="report-summary" aria-label="Podsumowanie statusów spotkań">
+      <div class="stat-item">
+        <span>Spotkania razem</span>
+        <strong>{{ meetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Zaplanowane</span>
+        <strong>{{ plannedMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>W realizacji</span>
+        <strong>{{ inProgressMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Zakończone</span>
+        <strong>{{ completedMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Przełożone</span>
+        <strong>{{ postponedMeetingsCount }}</strong>
+      </div>
+
+      <div class="stat-item">
+        <span>Anulowane</span>
+        <strong>{{ cancelledMeetingsCount }}</strong>
+      </div>
+    </section>
+
+    <section class="insights-box" *ngIf="reportInsights.length > 0">
+      <h2>Wnioski z raportu</h2>
+      <ul>
+        <li *ngFor="let insight of reportInsights">
+          {{ insight }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="reports-grid">
+      <article class="report-panel">
+        <div class="report-header">
+          <h2>Spotkania według agenta</h2>
+          <span>{{ getSystemMeetingCompletionPercent() }}% realizacji</span>
+        </div>
+
+        <div class="table-scroll" *ngIf="meetingsByAgent.length > 0; else noMeetingsReport">
+          <table>
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Wszystkie</th>
+                <th>Zaplanowane</th>
+                <th>W realizacji</th>
+                <th>Zakończone</th>
+                <th>Przełożone</th>
+                <th>Anulowane</th>
+                <th>Realizacja</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of meetingsByAgent">
+                <td>
+                  <span class="agent-cell">
+                    <span class="agent-name">{{ item.agentName }}</span>
+                    <span class="agent-status" *ngIf="item.agentStatus !== 'Aktywny'">{{ item.agentStatus }}</span>
+                  </span>
+                </td>
+                <td>{{ item.meetingsCount }}</td>
+                <td>{{ item.plannedMeetingsCount }}</td>
+                <td>{{ item.inProgressMeetingsCount }}</td>
+                <td>{{ item.completedMeetingsCount }}</td>
+                <td>{{ item.postponedMeetingsCount }}</td>
+                <td>{{ item.cancelledMeetingsCount }}</td>
+                <td class="progress-cell">
+                  <span class="progress-label">{{ getMeetingCompletionPercent(item) }}%</span>
+                  <span class="progress-track">
+                    <span class="progress-fill" [style.width.%]="getMeetingCompletionPercent(item)"></span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noMeetingsReport>
+          <p class="empty-message">Brak danych o spotkaniach. Po dodaniu spotkań raport pokaże ich statusy dla każdego agenta.</p>
+        </ng-template>
+      </article>
+
+      <article class="report-panel">
+        <div class="report-header">
+          <h2>Czas pracy według agenta</h2>
+          <span>{{ workTimeEntriesCount }} wpisów</span>
+        </div>
+
+        <div class="table-scroll" *ngIf="workTimeByAgent.length > 0; else noWorkTimeReport">
+          <table class="work-time-table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Wpisy</th>
+                <th>Łączny czas</th>
+                <th>Obciążenie</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of workTimeByAgent">
+                <td>
+                  <span class="agent-cell">
+                    <span class="agent-name">{{ item.agentName }}</span>
+                    <span class="agent-status" *ngIf="item.agentStatus !== 'Aktywny'">{{ item.agentStatus }}</span>
+                  </span>
+                </td>
+                <td>{{ item.entriesCount }}</td>
+                <td>{{ formatHours(item.totalHours) }}</td>
+                <td class="progress-cell">
+                  <span class="progress-label">{{ getWorkTimePercent(item) }}%</span>
+                  <span class="progress-track">
+                    <span class="progress-fill work-time-fill" [style.width.%]="getWorkTimePercent(item)"></span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noWorkTimeReport>
+          <p class="empty-message">Brak danych o czasie pracy. Po dodaniu wpisów raport pokaże łączny czas pracy agentów.</p>
+        </ng-template>
+
+        <p class="report-help">
+          Obciążenie porównuje łączny czas pracy agenta z agentem, który ma najwięcej zarejestrowanych godzin.
+        </p>
+      </article>
+    </section>
+  </main>
+</div>
